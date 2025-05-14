@@ -38,20 +38,20 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Routes
-// Register a new user
+// Registeing a new users
 app.post('/api/register', async (req, res) => {
   try {
     const { username, password, name } = req.body;
     
-    // Validate input
+    // Validating the inputs
     if (!username || !password || !name) {
       return res.status(400).json({ error: "All fields are required" });
     }
     
-    // Hash password
+    // Hashing the password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Check if username already exists
+    // Checking if username already exists
     const connection = await pool.getConnection();
     const [existingUsers] = await connection.query('SELECT * FROM users WHERE username = ?', [username]);
     
@@ -60,7 +60,7 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: "Username already exists" });
     }
     
-    // Insert new user
+    // Inserting new user
     const [result] = await connection.query(
       'INSERT INTO users (username, password, name) VALUES (?, ?, ?)',
       [username, hashedPassword, name]
@@ -68,10 +68,10 @@ app.post('/api/register', async (req, res) => {
     
     const userId = result.insertId;
     
-    // Generate account number
+    //account number random
     const accountNumber = Math.floor(10000000 + Math.random() * 90000000).toString();
     
-    // Create a default savings account for the user
+    //inserting into accounts table
     await connection.query(
       'INSERT INTO accounts (user_id, account_number, account_type, balance) VALUES (?, ?, ?, ?)',
       [userId, accountNumber, 'Savings', 100.00]
@@ -86,7 +86,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login
+// Login authentication
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -129,7 +129,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Get user profile and account details
 app.get('/api/profile', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -145,10 +144,10 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: "No accounts found for this user" });
     }
     
-    // For simplicity, we'll just get the first account
+    
     const account = accounts[0];
     
-    // Get transactions
+    // reteriving transactions query
     const [transactions] = await connection.query(
       'SELECT * FROM transactions WHERE account_id = ? ORDER BY created_at DESC LIMIT 10',
       [account.id]
@@ -181,7 +180,7 @@ app.post('/api/transaction', authenticateToken, async (req, res) => {
     const { type, amount } = req.body;
     const userId = req.user.id;
     
-    // Validate transaction
+    // Validating the transaction
     if (!['deposit', 'withdraw'].includes(type)) {
       return res.status(400).json({ error: "Invalid transaction type" });
     }
@@ -195,7 +194,6 @@ app.post('/api/transaction', authenticateToken, async (req, res) => {
     await connection.beginTransaction();
     
     try {
-      // Get account
       const [accounts] = await connection.query(
         'SELECT * FROM accounts WHERE user_id = ?',
         [userId]
@@ -209,25 +207,25 @@ app.post('/api/transaction', authenticateToken, async (req, res) => {
       
       const account = accounts[0];
       
-      // Check if withdrawal is possible
+      // Checking the witdraw is possible 
       if (type === 'withdraw' && numAmount > account.balance) {
         await connection.rollback();
         connection.release();
         return res.status(400).json({ error: "Insufficient funds" });
       }
       
-      // Calculate new balance
+      //  new balance
       const newBalance = type === 'deposit'
         ? parseFloat(account.balance) + numAmount
         : parseFloat(account.balance) - numAmount;
       
-      // Update account balance
+      // Updating  balance
       await connection.query(
         'UPDATE accounts SET balance = ? WHERE id = ?',
         [newBalance, account.id]
       );
       
-      // Record the transaction
+      // Recording the  transaction
       await connection.query(
         'INSERT INTO transactions (account_id, type, amount, balance_after) VALUES (?, ?, ?, ?)',
         [account.id, type, numAmount, newBalance]
@@ -285,9 +283,9 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
     
     const accountId = accounts[0].id;
     
-    // Get transactions with pagination
+    
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 30;
     const offset = (page - 1) * limit;
     
     const [transactions] = await connection.query(
@@ -321,7 +319,7 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
   }
 });
 
-// Start the server
+// server start
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

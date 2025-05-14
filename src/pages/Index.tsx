@@ -217,11 +217,11 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-red-50 to-red-100 p-4">
-      <header className="container mx-auto py-4 flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-indigo-600">SV Bank</h1>
+    <div className="w-full text-center flex flex-col min-h-screen bg-gradient-to-br from-red-50 to-red-100 p-4">
+      <header className="w-full text-center bg-gradient-to-r from-indigo-500 to-purple-600 container mx-auto py-4 flex justify-between items-center">
+        <h1 className="text-3xl  text-center font-bold  text-red-100">SV Bank</h1>
         {isLoggedIn && (
-          <Button variant="ghost" onClick={handleLogout} disabled={loading}>
+          <Button className='bg-red-500' variant="ghost" onClick={handleLogout} disabled={loading}>
             Logout
           </Button>
         )}
@@ -358,7 +358,7 @@ const Index = () => {
             <p className="text-lg text-indigo-600">Loading...</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className=" space-y-8">
             <div className="max-w-4xl mx-auto">
               <Card className="shadow-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
                 <CardHeader>
