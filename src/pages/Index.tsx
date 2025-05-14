@@ -219,7 +219,7 @@ const Index = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <header className="container mx-auto py-4 flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-indigo-600">Vibrant Bank</h1>
+        <h1 className="text-3xl font-bold text-indigo-600">SV Bank</h1>
         {isLoggedIn && (
           <Button variant="ghost" onClick={handleLogout} disabled={loading}>
             Logout
@@ -232,7 +232,7 @@ const Index = () => {
           <div className="max-w-md mx-auto">
             <Card className="shadow-xl bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-2xl text-center text-indigo-700">Welcome to Vibrant Bank</CardTitle>
+                <CardTitle className="text-2xl text-center text-indigo-700">Welcome to SV Bank</CardTitle>
                 <CardDescription className="text-center">Your trusted financial partner</CardDescription>
               </CardHeader>
               
@@ -478,7 +478,7 @@ const Index = () => {
       </main>
       
       <footer className="container mx-auto mt-auto py-4 text-center text-sm text-gray-500">
-        <p>© {new Date().getFullYear()} Vibrant Bank. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} SV BANK. All rights reserved.</p>
       </footer>
     </div>
   );

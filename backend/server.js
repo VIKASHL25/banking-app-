@@ -74,7 +74,7 @@ app.post('/api/register', async (req, res) => {
     // Create a default savings account for the user
     await connection.query(
       'INSERT INTO accounts (user_id, account_number, account_type, balance) VALUES (?, ?, ?, ?)',
-      [userId, accountNumber, 'Savings', 1000.00]
+      [userId, accountNumber, 'Savings', 100.00]
     );
     
     connection.release();
