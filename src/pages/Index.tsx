@@ -8,10 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, History } from "lucide-react";
 
+// API URL
+const API_URL = "http://localhost:5000/api";
+
 const Index = () => {
   // Authentication states
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const [token, setToken] = useState('');
   
   // User data
   const [userData, setUserData] = useState({
@@ -31,60 +35,87 @@ const Index = () => {
     name: ""
   });
   const [transactionAmount, setTransactionAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Check if user is already logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem("bankingUser");
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setUserData(user);
-        setIsLoggedIn(true);
-      } catch (error) {
-        console.error("Failed to parse stored user data", error);
-      }
+    const storedToken = localStorage.getItem("bankingToken");
+    if (storedToken) {
+      setToken(storedToken);
+      fetchUserProfile(storedToken);
+      setIsLoggedIn(true);
     }
   }, []);
 
-  // Handle login
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // This is a mock login - in a real app you'd validate against a backend
-    // For demo purposes, we'll check against localStorage
-    const storedUsers = JSON.parse(localStorage.getItem("bankingUsers") || "[]");
-    const user = storedUsers.find(
-      (u: any) => u.username === loginForm.username && u.password === loginForm.password
-    );
-    
-    if (user) {
-      setUserData({
-        name: user.name,
-        accountNumber: user.accountNumber || generateAccountNumber(),
-        accountType: user.accountType || "Savings",
-        balance: user.balance || 1000, // Default starting balance
-        transactions: user.transactions || []
+  // Fetch user profile data
+  const fetchUserProfile = async (authToken) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/profile`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
       });
       
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile');
+      }
+      
+      const data = await response.json();
+      setUserData(data);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      toast.error("Failed to load profile data");
+      // If we can't fetch the profile, the token might be invalid
+      handleLogout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle login
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: loginForm.username,
+          password: loginForm.password
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+      
+      const data = await response.json();
+      
+      // Store token
+      localStorage.setItem("bankingToken", data.token);
+      setToken(data.token);
+      
+      // Fetch user profile
+      await fetchUserProfile(data.token);
+      
       setIsLoggedIn(true);
-      
-      // Store current user in localStorage
-      localStorage.setItem("bankingUser", JSON.stringify({
-        ...user,
-        accountNumber: user.accountNumber || generateAccountNumber(),
-        accountType: user.accountType || "Savings",
-        balance: user.balance || 1000,
-        transactions: user.transactions || []
-      }));
-      
       toast.success("Login successful!");
-    } else {
-      toast.error("Invalid username or password");
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error(error.message || "Invalid username or password");
+    } finally {
+      setLoading(false);
     }
   };
 
   // Handle registration
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     
     if (registerForm.password !== registerForm.confirmPassword) {
@@ -92,50 +123,51 @@ const Index = () => {
       return;
     }
     
-    const storedUsers = JSON.parse(localStorage.getItem("bankingUsers") || "[]");
-    
-    if (storedUsers.some((u: any) => u.username === registerForm.username)) {
-      toast.error("Username already exists");
-      return;
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: registerForm.username,
+          password: registerForm.password,
+          name: registerForm.name
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+      
+      toast.success("Registration successful! Please login.");
+      setActiveTab("login");
+      setRegisterForm({
+        username: "",
+        password: "",
+        confirmPassword: "",
+        name: ""
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error(error.message || "Registration failed");
+    } finally {
+      setLoading(false);
     }
-    
-    const newUser = {
-      username: registerForm.username,
-      password: registerForm.password,
-      name: registerForm.name,
-      accountNumber: generateAccountNumber(),
-      accountType: "Savings",
-      balance: 1000, // Default starting balance
-      transactions: []
-    };
-    
-    storedUsers.push(newUser);
-    localStorage.setItem("bankingUsers", JSON.stringify(storedUsers));
-    
-    // Auto login after registration
-    setUserData({
-      name: newUser.name,
-      accountNumber: newUser.accountNumber,
-      accountType: newUser.accountType,
-      balance: newUser.balance,
-      transactions: newUser.transactions
-    });
-    
-    setIsLoggedIn(true);
-    localStorage.setItem("bankingUser", JSON.stringify(newUser));
-    
-    toast.success("Registration successful!");
   };
 
   // Handle logout
   const handleLogout = () => {
     setIsLoggedIn(false);
-    localStorage.removeItem("bankingUser");
+    setToken('');
+    localStorage.removeItem("bankingToken");
     toast.info("Logged out successfully");
   };
 
   // Handle deposit and withdrawal
-  const handleTransaction = (type: 'deposit' | 'withdraw') => {
+  const handleTransaction = async (type) => {
     const amount = parseFloat(transactionAmount);
     
     if (isNaN(amount) || amount <= 0) {
@@ -143,56 +175,43 @@ const Index = () => {
       return;
     }
     
-    if (type === 'withdraw' && amount > userData.balance) {
-      toast.error("Insufficient funds");
-      return;
-    }
-    
-    const newBalance = type === 'deposit' 
-      ? userData.balance + amount 
-      : userData.balance - amount;
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/transaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type, amount })
+      });
       
-    const transaction = {
-      id: Date.now(),
-      type,
-      amount,
-      date: new Date().toISOString(),
-      balance: newBalance
-    };
-    
-    const updatedTransactions = [transaction, ...userData.transactions];
-    
-    const updatedUserData = {
-      ...userData,
-      balance: newBalance,
-      transactions: updatedTransactions
-    };
-    
-    setUserData(updatedUserData);
-    
-    // Update localStorage
-    localStorage.setItem("bankingUser", JSON.stringify(updatedUserData));
-    
-    // Update the user in the users list too
-    const storedUsers = JSON.parse(localStorage.getItem("bankingUsers") || "[]");
-    const updatedUsers = storedUsers.map((u: any) => 
-      u.username === JSON.parse(localStorage.getItem("bankingUser") || "{}").username
-        ? { ...u, balance: newBalance, transactions: updatedTransactions }
-        : u
-    );
-    localStorage.setItem("bankingUsers", JSON.stringify(updatedUsers));
-    
-    setTransactionAmount("");
-    toast.success(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} successful!`);
-  };
-
-  // Generate a random account number
-  const generateAccountNumber = () => {
-    return Math.floor(10000000 + Math.random() * 90000000).toString();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to process ${type}`);
+      }
+      
+      const data = await response.json();
+      
+      // Update user data with new balance and transactions
+      setUserData(prevData => ({
+        ...prevData,
+        balance: data.balance,
+        transactions: data.transactions
+      }));
+      
+      setTransactionAmount("");
+      toast.success(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} successful!`);
+    } catch (error) {
+      console.error("Transaction error:", error);
+      toast.error(error.message || `Failed to process ${type}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Format date
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
@@ -202,7 +221,7 @@ const Index = () => {
       <header className="container mx-auto py-4 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-indigo-600">Vibrant Bank</h1>
         {isLoggedIn && (
-          <Button variant="ghost" onClick={handleLogout}>
+          <Button variant="ghost" onClick={handleLogout} disabled={loading}>
             Logout
           </Button>
         )}
@@ -239,6 +258,7 @@ const Index = () => {
                           placeholder="Enter your username" 
                           value={loginForm.username}
                           onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                          disabled={loading}
                           required
                         />
                       </div>
@@ -251,12 +271,17 @@ const Index = () => {
                           placeholder="Enter your password"
                           value={loginForm.password}
                           onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                          disabled={loading}
                           required
                         />
                       </div>
                       
-                      <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
-                        Login
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        disabled={loading}
+                      >
+                        {loading ? 'Processing...' : 'Login'}
                       </Button>
                     </form>
                   </TabsContent>
@@ -271,6 +296,7 @@ const Index = () => {
                           placeholder="Enter your full name"
                           value={registerForm.name}
                           onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                          disabled={loading}
                           required
                         />
                       </div>
@@ -283,6 +309,7 @@ const Index = () => {
                           placeholder="Choose a username"
                           value={registerForm.username}
                           onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
+                          disabled={loading}
                           required
                         />
                       </div>
@@ -295,6 +322,7 @@ const Index = () => {
                           placeholder="Choose a password"
                           value={registerForm.password}
                           onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                          disabled={loading}
                           required
                         />
                       </div>
@@ -307,18 +335,27 @@ const Index = () => {
                           placeholder="Confirm your password"
                           value={registerForm.confirmPassword}
                           onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                          disabled={loading}
                           required
                         />
                       </div>
                       
-                      <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
-                        Register
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        disabled={loading}
+                      >
+                        {loading ? 'Processing...' : 'Register'}
                       </Button>
                     </form>
                   </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
+          </div>
+        ) : loading ? (
+          <div className="flex justify-center items-center h-64">
+            <p className="text-lg text-indigo-600">Loading...</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -371,6 +408,7 @@ const Index = () => {
                       placeholder="Enter amount"
                       value={transactionAmount}
                       onChange={(e) => setTransactionAmount(e.target.value)}
+                      disabled={loading}
                     />
                   </div>
                   
@@ -378,6 +416,7 @@ const Index = () => {
                     <Button 
                       className="bg-green-600 hover:bg-green-700 gap-2"
                       onClick={() => handleTransaction('deposit')}
+                      disabled={loading}
                     >
                       <ArrowDown className="h-4 w-4" /> Deposit
                     </Button>
@@ -385,6 +424,7 @@ const Index = () => {
                     <Button 
                       className="bg-amber-600 hover:bg-amber-700 gap-2"
                       onClick={() => handleTransaction('withdraw')}
+                      disabled={loading}
                     >
                       <ArrowUp className="h-4 w-4" /> Withdraw
                     </Button>
@@ -402,9 +442,9 @@ const Index = () => {
                 
                 <CardContent className="-mx-6">
                   <div className="max-h-60 overflow-auto pr-6">
-                    {userData.transactions.length > 0 ? (
+                    {userData.transactions && userData.transactions.length > 0 ? (
                       <div className="space-y-2">
-                        {userData.transactions.map((transaction: any) => (
+                        {userData.transactions.map((transaction) => (
                           <div 
                             key={transaction.id} 
                             className={`p-3 rounded-lg flex justify-between ${
@@ -421,7 +461,7 @@ const Index = () => {
                               <p className="font-bold">
                                 {transaction.type === 'deposit' ? '+' : '-'}${transaction.amount.toFixed(2)}
                               </p>
-                              <p className="text-xs opacity-80">Balance: ${transaction.balance.toFixed(2)}</p>
+                              <p className="text-xs opacity-80">Balance: ${transaction.balanceAfter.toFixed(2)}</p>
                             </div>
                           </div>
                         ))}
