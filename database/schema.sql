@@ -35,15 +35,3 @@ CREATE TABLE transactions (
     FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
 );
 
--- Insert some sample data
-INSERT INTO users (username, password, name) VALUES
-('john_doe', '$2b$10$XurIAkDjoiFnL6iYXS1XOeT8UgZG9RxKZV6m7AJPk0A9Maol9B9va', 'John Doe');
--- Note: password is 'password123' hashed with bcrypt
-
--- Create an account for the sample user
-INSERT INTO accounts (user_id, account_number, account_type, balance) VALUES
-(1, '1000000001', 'Savings', 1000.00);
-
--- Add some sample transactions
-INSERT INTO transactions (account_id, type, amount, balance_after) VALUES
-(1, 'deposit', 1000.00, 1000.00);

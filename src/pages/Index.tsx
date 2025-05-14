@@ -217,7 +217,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-red-50 to-red-100 p-4">
       <header className="container mx-auto py-4 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-indigo-600">SV Bank</h1>
         {isLoggedIn && (
@@ -382,7 +382,7 @@ const Index = () => {
                     
                     <div className="p-4 bg-white/20 rounded-lg backdrop-blur-sm">
                       <p className="text-white/80 text-sm">Current Balance</p>
-                      <p className="text-2xl font-bold">${userData.balance.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">₹{userData.balance.toFixed(2)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -393,7 +393,7 @@ const Index = () => {
               <Card className="shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <span>Quick Actions</span>
+                    <span>Transactions</span>
                   </CardTitle>
                 </CardHeader>
                 
@@ -459,9 +459,9 @@ const Index = () => {
                             </div>
                             <div className="text-right">
                               <p className="font-bold">
-                                {transaction.type === 'deposit' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                                {transaction.type === 'deposit' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
                               </p>
-                              <p className="text-xs opacity-80">Balance: ${transaction.balanceAfter.toFixed(2)}</p>
+                              <p className="text-xs opacity-80">Balance: ₹{transaction.balanceAfter.toFixed(2)}</p>
                             </div>
                           </div>
                         ))}
