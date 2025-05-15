@@ -1,8 +1,10 @@
 
+-- Drop database if exists and create a new one
+DROP DATABASE IF EXISTS banking_app;
 CREATE DATABASE banking_app;
 USE banking_app;
 
--- Users table
+-- Create Users table
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -11,9 +13,6 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-<<<<<<< HEAD
--- Accounts table
-=======
 -- Create Staff table
 CREATE TABLE staff (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,7 +25,6 @@ CREATE TABLE staff (
 );
 
 -- Create Accounts table
->>>>>>> bf4b345e6ec28ab3391d18bc6340839348c18a6e
 CREATE TABLE accounts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -37,7 +35,7 @@ CREATE TABLE accounts (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Transactions table
+-- Create Transactions table
 CREATE TABLE transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     account_id INT NOT NULL,
