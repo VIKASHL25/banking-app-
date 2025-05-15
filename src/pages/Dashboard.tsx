@@ -1,122 +1,108 @@
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ArrowRightLeft, Calendar, DollarSign, History } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 // API URL
 const API_URL = "http://localhost:5000/api";
 
-// Format date utility
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-};
-
-// Format currency utility
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-};
-
-interface Transaction {
-  id: number;
-  type: string;
-  amount: number;
-  balanceAfter: number;
-  date: string;
-}
-
-interface Loan {
-  id: number;
-  loanType: string;
-  principalAmount: number;
-  interestRate: number;
-  startDate: string | null;
-  dueDate: string;
-  status: string;
-  approvedBy: string | null;
-  createdAt: string;
-}
-
-interface ProfileData {
-  name: string;
-  accountNumber: string;
-  accountType: string;
-  balance: number;
-  transactions: Transaction[];
-  loans: Loan[];
-}
-
 const Dashboard = () => {
-  const { user, token, logout, isLoggedIn } = useAuth();
+  const { user, token, logout, isLoggedIn, isStaff } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("overview");
   
-  const [userData, setUserData] = useState<ProfileData | null>(null);
-  const [transactionAmount, setTransactionAmount] = useState("");
-  const [transferAmount, setTransferAmount] = useState("");
-  const [recipientAccount, setRecipientAccount] = useState("");
+  // State for user profile data
+  const [profileData, setProfileData] = useState({
+    name: "",
+    accountNumber: "",
+    accountType: "",
+    balance: 0,
+    transactions: [] as any[],
+    loans: [] as any[]
+  });
+  
+  // Transaction form state
+  const [transactionForm, setTransactionForm] = useState({
+    type: "deposit",
+    amount: ""
+  });
+  
+  // Transfer form state
+  const [transferForm, setTransferForm] = useState({
+    recipientAccountNumber: "",
+    amount: ""
+  });
+  
+  // Loan form state
   const [loanForm, setLoanForm] = useState({
     loanType: "personal",
     principalAmount: "",
-    interestRate: "8.5",
+    interestRate: "5.5",
     dueDate: ""
   });
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("account");
   
-  // Check if user is logged in
+  // Loading states
+  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  
+  // Handle logout and redirect to home
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
+  // Handle staff login navigation
+  const handleStaffLogin = () => {
+    logout(); // First logout from current user session
+    navigate("/"); // Navigate to home page
+  };
+  
+  // Fetch profile data
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/");
       return;
     }
     
-    fetchUserProfile();
-  }, [isLoggedIn, navigate]);
-  
-  // Fetch user profile data
-  const fetchUserProfile = async () => {
-    if (!token) return;
-    
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-      
-      const data = await response.json();
-      setUserData(data);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile data");
-      logout();
-      navigate("/");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle deposit and withdrawal
-  const handleTransaction = async (type: 'deposit' | 'withdraw') => {
-    const amount = parseFloat(transactionAmount);
-    
-    if (isNaN(amount) || amount <= 0) {
-      toast.error("Please enter a valid amount");
+    if (isStaff) {
+      navigate("/staff");
       return;
     }
+    
+    const fetchProfile = async () => {
+      try {
+        setProfileLoading(true);
+        const response = await fetch(`${API_URL}/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch profile data");
+        }
+        
+        const data = await response.json();
+        setProfileData(data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [isLoggedIn, navigate, token, isStaff]);
+  
+  // Process transaction
+  const handleTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
     
     try {
       setLoading(true);
@@ -124,51 +110,44 @@ const Dashboard = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ type, amount })
+        body: JSON.stringify({
+          type: transactionForm.type,
+          amount: parseFloat(transactionForm.amount)
+        })
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to process ${type}`);
+        throw new Error(errorData.error || 'Transaction failed');
       }
       
       const data = await response.json();
+      setProfileData(prev => ({
+        ...prev,
+        balance: data.balance,
+        transactions: data.transactions
+      }));
       
-      // Update user data with new balance and transactions
-      setUserData(prevData => {
-        if (!prevData) return null;
-        return {
-          ...prevData,
-          balance: data.balance,
-          transactions: data.transactions
-        };
+      toast.success(`${transactionForm.type === 'deposit' ? 'Deposit' : 'Withdrawal'} successful!`);
+      
+      // Clear form
+      setTransactionForm({
+        type: "deposit",
+        amount: ""
       });
-      
-      setTransactionAmount("");
-      toast.success(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} successful!`);
     } catch (error) {
       console.error("Transaction error:", error);
-      toast.error((error as Error).message || `Failed to process ${type}`);
+      toast.error((error as Error).message || "Transaction failed");
     } finally {
       setLoading(false);
     }
   };
   
-  // Handle money transfer
-  const handleTransfer = async () => {
-    const amount = parseFloat(transferAmount);
-    
-    if (isNaN(amount) || amount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-    
-    if (!recipientAccount) {
-      toast.error("Please enter a recipient account number");
-      return;
-    }
+  // Process transfer
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
     
     try {
       setLoading(true);
@@ -176,63 +155,44 @@ const Dashboard = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          recipientAccountNumber: recipientAccount,
-          amount: amount
+          recipientAccountNumber: transferForm.recipientAccountNumber,
+          amount: parseFloat(transferForm.amount)
         })
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Transfer failed");
+        throw new Error(errorData.error || 'Transfer failed');
       }
       
       const data = await response.json();
+      setProfileData(prev => ({
+        ...prev,
+        balance: data.balance,
+        transactions: data.transactions
+      }));
       
-      // Update user data with new balance and transactions
-      setUserData(prevData => {
-        if (!prevData) return null;
-        return {
-          ...prevData,
-          balance: data.balance,
-          transactions: data.transactions
-        };
-      });
-      
-      setTransferAmount("");
-      setRecipientAccount("");
       toast.success("Transfer successful!");
+      
+      // Clear form
+      setTransferForm({
+        recipientAccountNumber: "",
+        amount: ""
+      });
     } catch (error) {
       console.error("Transfer error:", error);
-      toast.error((error as Error).message || "Failed to process transfer");
+      toast.error((error as Error).message || "Transfer failed");
     } finally {
       setLoading(false);
     }
   };
   
-  // Handle loan application
+  // Apply for loan
   const handleLoanApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const principal = parseFloat(loanForm.principalAmount);
-    const interestRate = parseFloat(loanForm.interestRate);
-    
-    if (isNaN(principal) || principal <= 0) {
-      toast.error("Please enter a valid loan amount");
-      return;
-    }
-    
-    if (isNaN(interestRate) || interestRate <= 0) {
-      toast.error("Please enter a valid interest rate");
-      return;
-    }
-    
-    if (!loanForm.dueDate) {
-      toast.error("Please select a due date");
-      return;
-    }
     
     try {
       setLoading(true);
@@ -240,77 +200,87 @@ const Dashboard = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           loanType: loanForm.loanType,
-          principalAmount: principal,
-          interestRate: interestRate,
+          principalAmount: parseFloat(loanForm.principalAmount),
+          interestRate: parseFloat(loanForm.interestRate),
           dueDate: loanForm.dueDate
         })
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Loan application failed");
+        throw new Error(errorData.error || 'Loan application failed');
       }
       
       const data = await response.json();
+      setProfileData(prev => ({
+        ...prev,
+        loans: data.loans
+      }));
       
-      // Update user data with new loans
-      setUserData(prevData => {
-        if (!prevData) return null;
-        return {
-          ...prevData,
-          loans: data.loans
-        };
-      });
+      toast.success("Loan application submitted successfully!");
       
+      // Clear form
       setLoanForm({
         loanType: "personal",
         principalAmount: "",
-        interestRate: "8.5",
+        interestRate: "5.5",
         dueDate: ""
       });
-      
-      toast.success("Loan application submitted successfully!");
     } catch (error) {
       console.error("Loan application error:", error);
-      toast.error((error as Error).message || "Failed to submit loan application");
+      toast.error((error as Error).message || "Loan application failed");
     } finally {
       setLoading(false);
     }
   };
   
-  // Loading state
-  if (loading && !userData) {
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+  
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+  
+  if (profileLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-xl text-indigo-600">Loading your dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="w-full gradient-primary py-4 shadow-md">
-        <div className="container mx-auto px-4">
+      <header className="w-full gradient-primary py-4 px-4 shadow-md">
+        <div className="container mx-auto">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">SV Bank</h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-white">Welcome, {user?.name}</span>
-              <Button 
-                variant="outline" 
-                className="border-white text-white hover:bg-white/20"
-                onClick={() => {
-                  logout();
-                  navigate("/");
-                }}
-              >
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-white">SV Bank</h1>
+              <span className="ml-4 text-white opacity-80">Welcome, {user?.name || profileData.name}</span>
+            </div>
+            <div className="space-x-4">
+              <Button variant="ghost" className="text-white hover:bg-white/20" onClick={handleStaffLogin}>
+                Staff Login
+              </Button>
+              <Button variant="outline" className="border-white text-white hover:bg-white/20" onClick={handleLogout}>
                 Logout
               </Button>
             </div>
@@ -320,448 +290,453 @@ const Dashboard = () => {
       
       {/* Main Content */}
       <main className="container mx-auto py-8 px-4">
-        {userData && (
-          <>
-            {/* Account Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="balance-card col-span-1 md:col-span-1">
+        {/* Account Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="shadow-md">
+            <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-lg">
+              <CardTitle>Account Balance</CardTitle>
+              <CardDescription className="text-white/80">Current available balance</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="text-3xl font-bold">{formatCurrency(profileData.balance)}</div>
+              <p className="text-gray-500 mt-2">Account: {profileData.accountNumber}</p>
+              <p className="text-gray-500">Type: {profileData.accountType}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Latest transactions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {profileData.transactions.slice(0, 3).map((transaction, index) => (
+                <div key={index} className={`flex justify-between items-center py-2 ${index !== 0 ? 'border-t' : ''}`}>
+                  <div>
+                    <p className="font-medium">{transaction.type === 'deposit' ? 'Deposit' : 'Withdrawal'}</p>
+                    <p className="text-gray-500 text-sm">{formatDate(transaction.date)}</p>
+                  </div>
+                  <div className={transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'}>
+                    {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                  </div>
+                </div>
+              ))}
+              {profileData.transactions.length === 0 && (
+                <p className="text-gray-500 text-center py-4">No recent transactions</p>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>Loan Status</CardTitle>
+              <CardDescription>Your active loans</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {profileData.loans.slice(0, 2).map((loan, index) => (
+                <div key={index} className={`py-2 ${index !== 0 ? 'border-t' : ''}`}>
+                  <div className="flex justify-between">
+                    <p className="font-medium">{loan.loanType.charAt(0).toUpperCase() + loan.loanType.slice(1)} Loan</p>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      loan.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                      loan.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                      loan.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+                    </span>
+                  </div>
+                  <p className="text-gray-500 text-sm mt-1">Amount: {formatCurrency(loan.principalAmount)}</p>
+                </div>
+              ))}
+              {profileData.loans.length === 0 && (
+                <p className="text-gray-500 text-center py-4">No active loans</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Banking Actions Tabs */}
+        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <div className="mb-6 border-b">
+            <TabsList className="bg-transparent border-b-0">
+              <TabsTrigger value="overview" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-500 data-[state=active]:text-indigo-700 rounded-none border-b-2 border-transparent pb-2 pt-1">Overview</TabsTrigger>
+              <TabsTrigger value="transactions" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-500 data-[state=active]:text-indigo-700 rounded-none border-b-2 border-transparent pb-2 pt-1">Deposit/Withdraw</TabsTrigger>
+              <TabsTrigger value="transfer" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-500 data-[state=active]:text-indigo-700 rounded-none border-b-2 border-transparent pb-2 pt-1">Transfer Money</TabsTrigger>
+              <TabsTrigger value="loans" className="data-[state=active]:border-b-2 data-[state=active]:border-indigo-500 data-[state=active]:text-indigo-700 rounded-none border-b-2 border-transparent pb-2 pt-1">Loans</TabsTrigger>
+            </TabsList>
+          </div>
+          
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Transaction History */}
+              <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center">
-                    <DollarSign className="mr-2 h-5 w-5" />
-                    Balance
-                  </CardTitle>
+                  <CardTitle>Transaction History</CardTitle>
+                  <CardDescription>Recent account activity</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold mb-2">
-                    {formatCurrency(userData.balance)}
-                  </div>
-                  <p className="text-sm opacity-80">Account: {userData.accountNumber}</p>
-                  <p className="text-sm opacity-80">Type: {userData.accountType}</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="loan-card col-span-1 md:col-span-1">
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center">
-                    <Calendar className="mr-2 h-5 w-5" />
-                    Loans
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold mb-2">
-                    {userData.loans.length}
-                  </div>
-                  <p className="text-sm opacity-80">
-                    {userData.loans.filter(loan => loan.status === 'approved').length} Active
-                  </p>
-                  <p className="text-sm opacity-80">
-                    {userData.loans.filter(loan => loan.status === 'pending').length} Pending
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card className="transaction-card col-span-1 md:col-span-1">
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center">
-                    <History className="mr-2 h-5 w-5" />
-                    Transactions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold mb-2">
-                    {userData.transactions.length}
-                  </div>
-                  <p className="text-sm opacity-80">
-                    {userData.transactions.filter(t => t.type === 'deposit').length} Deposits
-                  </p>
-                  <p className="text-sm opacity-80">
-                    {userData.transactions.filter(t => t.type === 'withdraw').length} Withdrawals
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Tabs for different functions */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-              <TabsList className="grid grid-cols-1 md:grid-cols-4 mb-8">
-                <TabsTrigger value="account">Account</TabsTrigger>
-                <TabsTrigger value="transfer">Transfer Money</TabsTrigger>
-                <TabsTrigger value="loans">Loans</TabsTrigger>
-                <TabsTrigger value="transactions">Transactions</TabsTrigger>
-              </TabsList>
-              
-              {/* Account Tab - Deposit/Withdraw */}
-              <TabsContent value="account">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Deposit/Withdraw</CardTitle>
-                      <CardDescription>Add or withdraw funds from your account</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="amount">Amount</Label>
-                        <div className="mt-1">
-                          <Input
-                            id="amount"
-                            type="number"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.01"
-                            value={transactionAmount}
-                            onChange={(e) => setTransactionAmount(e.target.value)}
-                          />
+                  <div className="space-y-4">
+                    {profileData.transactions.slice(0, 5).map((transaction, index) => (
+                      <div key={index} className="flex justify-between items-center border-b pb-2 last:border-0">
+                        <div>
+                          <p className="font-medium">{transaction.type === 'deposit' ? 'Deposit' : 'Withdrawal'}</p>
+                          <p className="text-gray-500 text-sm">{formatDate(transaction.date)}</p>
+                        </div>
+                        <div>
+                          <p className={transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'}>
+                            {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                          </p>
+                          <p className="text-gray-500 text-sm text-right">Balance: {formatCurrency(transaction.balanceAfter)}</p>
                         </div>
                       </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
+                    ))}
+                    {profileData.transactions.length === 0 && (
+                      <p className="text-gray-500 text-center py-8">No transaction history available</p>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="w-full" onClick={() => setActiveTab("transactions")}>
+                    Make a Transaction
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              {/* Loan Summary */}
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle>Your Loans</CardTitle>
+                  <CardDescription>Active and pending loans</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {profileData.loans.slice(0, 5).map((loan, index) => (
+                      <div key={index} className="border-b pb-2 last:border-0">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{loan.loanType.charAt(0).toUpperCase() + loan.loanType.slice(1)} Loan</p>
+                            <p className="text-gray-500 text-sm">Applied: {formatDate(loan.createdAt)}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            loan.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                            loan.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            loan.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                          <div>
+                            <span className="text-gray-500">Amount:</span>
+                            <p className="font-medium">{formatCurrency(loan.principalAmount)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Interest:</span>
+                            <p className="font-medium">{loan.interestRate}%</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Due Date:</span>
+                            <p className="font-medium">{formatDate(loan.dueDate)}</p>
+                          </div>
+                          {loan.approvedBy && (
+                            <div>
+                              <span className="text-gray-500">Approved By:</span>
+                              <p className="font-medium">{loan.approvedBy}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {profileData.loans.length === 0 && (
+                      <p className="text-gray-500 text-center py-8">No loans available</p>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="w-full" onClick={() => setActiveTab("loans")}>
+                    Apply for a Loan
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          {/* Transactions Tab */}
+          <TabsContent value="transactions">
+            <Card className="shadow-md max-w-md mx-auto">
+              <CardHeader>
+                <CardTitle>Deposit or Withdraw</CardTitle>
+                <CardDescription>Current balance: {formatCurrency(profileData.balance)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleTransaction} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="transaction-type">Transaction Type</Label>
+                    <div className="flex rounded-md overflow-hidden">
                       <Button
-                        className="bg-green-600 hover:bg-green-700 flex items-center"
-                        onClick={() => handleTransaction('deposit')}
-                        disabled={loading}
+                        type="button"
+                        variant={transactionForm.type === 'deposit' ? 'default' : 'outline'}
+                        className={`flex-1 rounded-none rounded-l-md ${transactionForm.type === 'deposit' ? 'bg-indigo-600' : ''}`}
+                        onClick={() => setTransactionForm(prev => ({ ...prev, type: 'deposit' }))}
                       >
-                        <ArrowDown className="mr-2 h-4 w-4" />
                         Deposit
                       </Button>
                       <Button
-                        className="bg-amber-600 hover:bg-amber-700 flex items-center"
-                        onClick={() => handleTransaction('withdraw')}
-                        disabled={loading}
+                        type="button"
+                        variant={transactionForm.type === 'withdraw' ? 'default' : 'outline'}
+                        className={`flex-1 rounded-none rounded-r-md ${transactionForm.type === 'withdraw' ? 'bg-indigo-600' : ''}`}
+                        onClick={() => setTransactionForm(prev => ({ ...prev, type: 'withdraw' }))}
                       >
-                        <ArrowUp className="mr-2 h-4 w-4" />
                         Withdraw
                       </Button>
-                    </CardFooter>
-                  </Card>
+                    </div>
+                  </div>
                   
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Recent Transactions</CardTitle>
-                      <CardDescription>Your last 5 transactions</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {userData.transactions.slice(0, 5).map((transaction) => (
-                          <div
-                            key={transaction.id}
-                            className={`p-3 rounded-lg flex justify-between ${
-                              transaction.type === 'deposit' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                            }`}
-                          >
-                            <div className="space-y-1">
-                              <p className="font-medium capitalize">{transaction.type}</p>
-                              <p className="text-xs opacity-80">{formatDate(transaction.date)}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold">
-                                {transaction.type === 'deposit' ? '+' : '-'}
-                                {formatCurrency(transaction.amount)}
-                              </p>
-                              <p className="text-xs opacity-80">
-                                Balance: {formatCurrency(transaction.balanceAfter)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        {userData.transactions.length === 0 && (
-                          <p className="text-center py-4 text-gray-500">No transactions yet</p>
-                        )}
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Amount</Label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500">$</span>
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-              
-              {/* Transfer Tab */}
-              <TabsContent value="transfer">
-                <Card className="max-w-2xl mx-auto">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-2xl">
-                      <ArrowRightLeft className="mr-2 h-5 w-5" />
-                      Transfer Money
-                    </CardTitle>
-                    <CardDescription>
-                      Transfer funds to another account
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form className="space-y-4">
-                      <div>
-                        <Label htmlFor="recipientAccount">Recipient Account Number</Label>
-                        <Input
-                          id="recipientAccount"
-                          placeholder="Enter account number"
-                          value={recipientAccount}
-                          onChange={(e) => setRecipientAccount(e.target.value)}
-                        />
+                      <Input
+                        id="amount"
+                        type="number"
+                        placeholder="0.00"
+                        className="pl-7"
+                        value={transactionForm.amount}
+                        onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: e.target.value }))}
+                        step="0.01"
+                        min="0"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    disabled={loading}
+                  >
+                    {loading ? 'Processing...' : `Process ${transactionForm.type === 'deposit' ? 'Deposit' : 'Withdrawal'}`}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Transfer Tab */}
+          <TabsContent value="transfer">
+            <Card className="shadow-md max-w-md mx-auto">
+              <CardHeader>
+                <CardTitle>Transfer Money</CardTitle>
+                <CardDescription>Send money to another account</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleTransfer} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="recipient">Recipient Account Number</Label>
+                    <Input
+                      id="recipient"
+                      type="text"
+                      placeholder="Enter account number"
+                      value={transferForm.recipientAccountNumber}
+                      onChange={(e) => setTransferForm(prev => ({ ...prev, recipientAccountNumber: e.target.value }))}
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="transfer-amount">Amount</Label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500">$</span>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="transferAmount">Amount</Label>
-                        <Input
-                          id="transferAmount"
-                          type="number"
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          value={transferAmount}
-                          onChange={(e) => setTransferAmount(e.target.value)}
-                        />
-                      </div>
-                      
-                      <Button
-                        type="button"
-                        className="w-full bg-indigo-600 hover:bg-indigo-700"
-                        onClick={handleTransfer}
+                      <Input
+                        id="transfer-amount"
+                        type="number"
+                        placeholder="0.00"
+                        className="pl-7"
+                        value={transferForm.amount}
+                        onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
+                        step="0.01"
+                        min="0"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500">Available balance: {formatCurrency(profileData.balance)}</p>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    disabled={loading}
+                  >
+                    {loading ? 'Processing...' : 'Send Money'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Loans Tab */}
+          <TabsContent value="loans">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Loan Application */}
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle>Apply for a Loan</CardTitle>
+                  <CardDescription>Fill out the form to request a new loan</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleLoanApplication} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="loan-type">Loan Type</Label>
+                      <select
+                        id="loan-type"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        value={loanForm.loanType}
+                        onChange={(e) => setLoanForm(prev => ({ ...prev, loanType: e.target.value }))}
                         disabled={loading}
                       >
-                        {loading ? 'Processing...' : 'Send Money'}
-                      </Button>
-                      
-                      <div className="bg-amber-50 p-4 rounded-md">
-                        <p className="text-amber-800 text-sm">
-                          <strong>Note:</strong> Please double-check the recipient's account number 
-                          before confirming the transfer. Transactions cannot be reversed.
-                        </p>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {/* Loans Tab */}
-              <TabsContent value="loans">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Loan Application Form */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Apply for a Loan</CardTitle>
-                      <CardDescription>Complete the form to submit a loan application</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={handleLoanApplication} className="space-y-4">
-                        <div>
-                          <Label htmlFor="loanType">Loan Type</Label>
-                          <Select
-                            value={loanForm.loanType}
-                            onValueChange={(value) => setLoanForm({...loanForm, loanType: value})}
-                          >
-                            <SelectTrigger id="loanType">
-                              <SelectValue placeholder="Select loan type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="personal">Personal Loan</SelectItem>
-                              <SelectItem value="home">Home Loan</SelectItem>
-                              <SelectItem value="education">Education Loan</SelectItem>
-                              <SelectItem value="business">Business Loan</SelectItem>
-                            </SelectContent>
-                          </Select>
+                        <option value="personal">Personal Loan</option>
+                        <option value="home">Home Loan</option>
+                        <option value="education">Education Loan</option>
+                        <option value="business">Business Loan</option>
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="principal-amount">Loan Amount</Label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-gray-500">$</span>
                         </div>
-                        
-                        <div>
-                          <Label htmlFor="principalAmount">Principal Amount</Label>
-                          <Input
-                            id="principalAmount"
-                            type="number"
-                            placeholder="0.00"
-                            min="1000"
-                            step="1000"
-                            value={loanForm.principalAmount}
-                            onChange={(e) => setLoanForm({...loanForm, principalAmount: e.target.value})}
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                          <Input
-                            id="interestRate"
-                            type="number"
-                            placeholder="8.5"
-                            min="1"
-                            max="30"
-                            step="0.1"
-                            value={loanForm.interestRate}
-                            onChange={(e) => setLoanForm({...loanForm, interestRate: e.target.value})}
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="dueDate">Due Date</Label>
-                          <Input
-                            id="dueDate"
-                            type="date"
-                            value={loanForm.dueDate}
-                            onChange={(e) => setLoanForm({...loanForm, dueDate: e.target.value})}
-                            min={new Date().toISOString().split('T')[0]}
-                            required
-                          />
-                        </div>
-                        
-                        <Button
-                          type="submit"
-                          className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        <Input
+                          id="principal-amount"
+                          type="number"
+                          placeholder="0.00"
+                          className="pl-7"
+                          value={loanForm.principalAmount}
+                          onChange={(e) => setLoanForm(prev => ({ ...prev, principalAmount: e.target.value }))}
+                          step="0.01"
+                          min="100"
                           disabled={loading}
-                        >
-                          {loading ? 'Processing...' : 'Submit Loan Application'}
-                        </Button>
-                      </form>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Loan Status */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Your Loans</CardTitle>
-                      <CardDescription>View your loan applications and status</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {userData.loans.length > 0 ? (
-                        <div className="space-y-4">
-                          {userData.loans.map((loan) => (
-                            <div
-                              key={loan.id}
-                              className="border rounded-lg p-4 shadow-sm"
-                            >
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h4 className="font-semibold capitalize text-lg">
-                                    {loan.loanType} Loan
-                                  </h4>
-                                  <p className="text-sm text-gray-500">
-                                    Applied on {new Date(loan.createdAt).toLocaleDateString()}
-                                  </p>
-                                </div>
-                                <span
-                                  className={`text-xs font-semibold px-2.5 py-1 rounded ${
-                                    loan.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                    loan.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                    'bg-yellow-100 text-yellow-800'
-                                  }`}
-                                >
-                                  {loan.status.toUpperCase()}
-                                </span>
-                              </div>
-                              
-                              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <p className="text-gray-500">Principal</p>
-                                  <p className="font-semibold">{formatCurrency(loan.principalAmount)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-500">Interest Rate</p>
-                                  <p className="font-semibold">{loan.interestRate}%</p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-500">Start Date</p>
-                                  <p className="font-semibold">
-                                    {loan.startDate ? new Date(loan.startDate).toLocaleDateString() : 'N/A'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-500">Due Date</p>
-                                  <p className="font-semibold">{new Date(loan.dueDate).toLocaleDateString()}</p>
-                                </div>
-                              </div>
-                              
-                              {loan.status === 'approved' && loan.approvedBy && (
-                                <div className="mt-4 pt-3 border-t text-sm">
-                                  <p className="text-gray-500">
-                                    Approved by {loan.approvedBy} on {new Date(loan.startDate as string).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500 mb-2">No loan applications yet</p>
-                          <p className="text-sm text-gray-400">
-                            Apply for a loan using the form on the left
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-              
-              {/* Transactions Tab */}
-              <TabsContent value="transactions">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <History className="mr-2 h-5 w-5" />
-                      Transaction History
-                    </CardTitle>
-                    <CardDescription>All your account transactions</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {userData.transactions.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="text-sm text-gray-500 border-b">
-                              <th className="text-left py-3 px-4">Type</th>
-                              <th className="text-left py-3 px-4">Date</th>
-                              <th className="text-right py-3 px-4">Amount</th>
-                              <th className="text-right py-3 px-4">Balance</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {userData.transactions.map((transaction) => (
-                              <tr key={transaction.id} className="border-b text-sm">
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center">
-                                    <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                                      transaction.type === 'deposit' ? 'bg-green-500' : 'bg-amber-500'
-                                    }`}></span>
-                                    <span className="capitalize">{transaction.type}</span>
-                                  </div>
-                                </td>
-                                <td className="py-3 px-4 text-gray-500">
-                                  {formatDate(transaction.date)}
-                                </td>
-                                <td className={`py-3 px-4 text-right font-medium ${
-                                  transaction.type === 'deposit' ? 'text-green-600' : 'text-amber-600'
-                                }`}>
-                                  {transaction.type === 'deposit' ? '+' : '-'}
-                                  {formatCurrency(transaction.amount)}
-                                </td>
-                                <td className="py-3 px-4 text-right">
-                                  {formatCurrency(transaction.balanceAfter)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                          required
+                        />
                       </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No transactions yet</p>
-                        <Button
-                          variant="outline"
-                          className="mt-4"
-                          onClick={() => setActiveTab("account")}
-                        >
-                          Make a Transaction
-                        </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="interest-rate">Interest Rate (%)</Label>
+                      <Input
+                        id="interest-rate"
+                        type="number"
+                        placeholder="5.5"
+                        value={loanForm.interestRate}
+                        onChange={(e) => setLoanForm(prev => ({ ...prev, interestRate: e.target.value }))}
+                        step="0.1"
+                        min="1"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="due-date">Due Date</Label>
+                      <Input
+                        id="due-date"
+                        type="date"
+                        value={loanForm.dueDate}
+                        onChange={(e) => setLoanForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                        min={new Date().toISOString().split('T')[0]}
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-indigo-600 hover:bg-indigo-700"
+                      disabled={loading}
+                    >
+                      {loading ? 'Processing...' : 'Apply for Loan'}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              {/* Existing Loans */}
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle>Your Loan Applications</CardTitle>
+                  <CardDescription>Status of your loan requests</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {profileData.loans.map((loan, index) => (
+                      <div key={index} className="border-b pb-3 last:border-0">
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium">{loan.loanType.charAt(0).toUpperCase() + loan.loanType.slice(1)} Loan</p>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            loan.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                            loan.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            loan.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                          <div>
+                            <span className="text-gray-500">Amount:</span>
+                            <p>{formatCurrency(loan.principalAmount)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Interest:</span>
+                            <p>{loan.interestRate}%</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Applied Date:</span>
+                            <p>{formatDate(loan.createdAt)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Due Date:</span>
+                            <p>{formatDate(loan.dueDate)}</p>
+                          </div>
+                          {loan.startDate && (
+                            <div>
+                              <span className="text-gray-500">Start Date:</span>
+                              <p>{formatDate(loan.startDate)}</p>
+                            </div>
+                          )}
+                          {loan.approvedBy && (
+                            <div>
+                              <span className="text-gray-500">Approved By:</span>
+                              <p>{loan.approvedBy}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {profileData.loans.length === 0 && (
+                      <div className="text-center py-6">
+                        <p className="text-gray-500">You haven't applied for any loans yet.</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
       
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-6">
-        <div className="container mx-auto px-4 text-center">
+      <footer className="bg-gray-800 text-white py-6 px-4 mt-auto">
+        <div className="container mx-auto text-center">
           <p>&copy; {new Date().getFullYear()} SV Bank. All rights reserved.</p>
         </div>
       </footer>
