@@ -24,6 +24,7 @@ interface AuthContextType {
   login: (token: string, userData: User) => void;
   staffLogin: (token: string, staffData: Staff) => void;
   logout: () => void;
+  clearAuthState: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,34 +51,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem("bankingToken", token);
-    localStorage.setItem("bankingUser", JSON.stringify(userData));
-    localStorage.removeItem("bankingStaff");
-    
-    setToken(token);
-    setUser(userData);
-    setStaff(null);
-  };
-
-  const staffLogin = (token: string, staffData: Staff) => {
-    localStorage.setItem("bankingToken", token);
-    localStorage.setItem("bankingStaff", JSON.stringify(staffData));
-    localStorage.removeItem("bankingUser");
-    
-    setToken(token);
-    setStaff(staffData);
-    setUser(null);
-  };
-
-  const logout = () => {
-    localStorage.removeItem("bankingToken");
-    localStorage.removeItem("bankingUser");
-    localStorage.removeItem("bankingStaff");
-    
+  const clearAuthState = () => {
     setToken(null);
     setUser(null);
     setStaff(null);
+    localStorage.removeItem("bankingToken");
+    localStorage.removeItem("bankingUser");
+    localStorage.removeItem("bankingStaff");
+  };
+
+  const login = (token: string, userData: User) => {
+    // Clear any existing auth state first
+    clearAuthState();
+    
+    localStorage.setItem("bankingToken", token);
+    localStorage.setItem("bankingUser", JSON.stringify(userData));
+    
+    setToken(token);
+    setUser(userData);
+  };
+
+  const staffLogin = (token: string, staffData: Staff) => {
+    // Clear any existing auth state first
+    clearAuthState();
+    
+    localStorage.setItem("bankingToken", token);
+    localStorage.setItem("bankingStaff", JSON.stringify(staffData));
+    
+    setToken(token);
+    setStaff(staffData);
+  };
+
+  const logout = () => {
+    clearAuthState();
   };
 
   return (
@@ -90,7 +96,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isStaff: !!staff,
         login,
         staffLogin,
-        logout
+        logout,
+        clearAuthState
       }}
     >
       {children}
