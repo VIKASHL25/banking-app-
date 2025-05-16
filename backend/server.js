@@ -148,17 +148,17 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Staff login
+// Staff login - Updated to use email instead of username
 app.post('/api/staff/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     
     const connection = await pool.getConnection();
-    const [staffMembers] = await connection.query('SELECT * FROM staff WHERE username = ?', [username]);
+    const [staffMembers] = await connection.query('SELECT * FROM staff WHERE email = ?', [email]);
     
     if (staffMembers.length === 0) {
       connection.release();
-      return res.status(401).json({ error: "Invalid username or password" });
+      return res.status(401).json({ error: "Invalid email or password" });
     }
     
     const staff = staffMembers[0];
@@ -167,11 +167,11 @@ app.post('/api/staff/login', async (req, res) => {
     
     if (!match) {
       connection.release();
-      return res.status(401).json({ error: "Invalid username or password" });
+      return res.status(401).json({ error: "Invalid email or password" });
     }
     
     const token = jwt.sign(
-      { id: staff.id, username: staff.username, name: staff.name, email: staff.email, role: staff.role, isStaff: true },
+      { id: staff.id, email: staff.email, name: staff.name, role: staff.role, isStaff: true },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -182,9 +182,8 @@ app.post('/api/staff/login', async (req, res) => {
       token,
       staff: {
         id: staff.id,
-        username: staff.username,
-        name: staff.name,
         email: staff.email,
+        name: staff.name,
         role: staff.role
       }
     });
