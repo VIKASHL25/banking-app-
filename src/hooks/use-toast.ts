@@ -1,14 +1,18 @@
-import { Toast, toast } from "@/components/ui/toast";
+
+import { Toast as ToastPrimitive } from "@/components/ui/toast";
 import * as React from "react";
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
 
-type ToasterToast = Toast & {
+type ToasterToast = {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: React.ReactNode;
+  open: boolean;
+  onOpenChange?: (open: boolean) => void;
+  variant?: "default" | "destructive";
 };
 
 const actionTypes = {
@@ -134,12 +138,14 @@ function dispatch(action: Action) {
   });
 }
 
-type Toast = Omit<ToasterToast, "id">;
+// Define the type for toast props
+type ToastProps = Omit<ToasterToast, "id" | "open">;
 
-function toast({ ...props }: Toast) {
+// Rename the function to avoid name conflicts
+function createToast(props: ToastProps) {
   const id = genId();
 
-  const update = (props: ToasterToast) =>
+  const update = (props: Partial<ToasterToast>) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
@@ -160,7 +166,7 @@ function toast({ ...props }: Toast) {
   });
 
   return {
-    id: id,
+    id,
     dismiss,
     update,
   };
@@ -181,9 +187,9 @@ function useToast() {
 
   return {
     ...state,
-    toast,
+    toast: createToast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   };
 }
 
-export { useToast, toast };
+export { useToast, createToast as toast };
