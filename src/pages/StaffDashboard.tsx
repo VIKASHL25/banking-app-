@@ -1,17 +1,21 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle, XCircle, UserCheck } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, UserCheck, IndianRupee } from "lucide-react";
 
 // API URL
 const API_URL = "http://localhost:5000/api";
 
 // Format currency utility with Rupee symbol
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR' 
+  }).format(amount);
 };
 
 interface PendingLoan {
@@ -312,8 +316,13 @@ const StaffDashboard = () => {
                           }}>Principal Amount</p>
                           <p style={{ 
                             fontWeight: "600", 
-                            fontSize: "1.125rem" 
-                          }}>{formatCurrency(loan.principalAmount)}</p>
+                            fontSize: "1.125rem", 
+                            display: "flex",
+                            alignItems: "center"
+                          }}>
+                            <IndianRupee className="h-4 w-4 mr-1" />
+                            {formatCurrency(loan.principalAmount)}
+                          </p>
                         </div>
                         <div>
                           <p style={{ 

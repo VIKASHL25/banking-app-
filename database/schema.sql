@@ -16,10 +16,9 @@ CREATE TABLE users (
 -- Create Staff table
 CREATE TABLE staff (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
     role VARCHAR(50) NOT NULL DEFAULT 'staff',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -63,5 +62,5 @@ CREATE TABLE loans (
 );
 
 -- Insert default staff member with plain text password (now "admin123")
-INSERT INTO staff (username, password, name, email, role)
-VALUES ('admin', 'admin123', 'Staff Admin', 'admin@svbank.com', 'admin');
+INSERT INTO staff (email, password, name, role)
+VALUES ('admin@svbank.com', 'admin123', 'Staff Admin', 'admin');

@@ -8,9 +8,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { IndianRupee } from "lucide-react";
 
 // API URL
 const API_URL = "http://localhost:5000/api";
+
+// Format currency utility with Rupee symbol
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR' 
+  }).format(amount);
+};
 
 const Index = () => {
   const { login, staffLogin, isLoggedIn } = useAuth();
@@ -20,6 +29,7 @@ const Index = () => {
   
   // Form states
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [staffLoginForm, setStaffLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({ 
     username: "", 
     password: "", 
@@ -40,36 +50,52 @@ const Index = () => {
     
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}${isStaffLogin ? '/staff/login' : '/login'}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: loginForm.username,
-          password: loginForm.password
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
-      }
-      
-      const data = await response.json();
-      
       if (isStaffLogin) {
+        const response = await fetch(`${API_URL}/staff/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: staffLoginForm.email,
+            password: staffLoginForm.password
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Login failed');
+        }
+        
+        const data = await response.json();
         staffLogin(data.token, data.staff);
         navigate("/staff");
+        toast.success("Staff login successful!");
       } else {
+        const response = await fetch(`${API_URL}/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: loginForm.username,
+            password: loginForm.password
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Login failed');
+        }
+        
+        const data = await response.json();
         login(data.token, data.user);
         navigate("/dashboard");
+        toast.success("Login successful!");
       }
-      
-      toast.success("Login successful!");
     } catch (error) {
       console.error("Login error:", error);
-      toast.error((error as Error).message || "Invalid username or password");
+      toast.error((error as Error).message || "Invalid login credentials");
     } finally {
       setLoading(false);
     }
@@ -314,13 +340,13 @@ const Index = () => {
                 ) : (
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="staff-username">Staff Username</Label>
+                      <Label htmlFor="staff-email">Staff Email</Label>
                       <Input 
-                        id="staff-username" 
-                        type="text" 
-                        placeholder="Enter your staff username" 
-                        value={loginForm.username}
-                        onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                        id="staff-email" 
+                        type="email" 
+                        placeholder="Enter your staff email" 
+                        value={staffLoginForm.email}
+                        onChange={(e) => setStaffLoginForm({ ...staffLoginForm, email: e.target.value })}
                         disabled={loading}
                         required
                       />
@@ -332,8 +358,8 @@ const Index = () => {
                         id="staff-password" 
                         type="password" 
                         placeholder="Enter your password"
-                        value={loginForm.password}
-                        onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                        value={staffLoginForm.password}
+                        onChange={(e) => setStaffLoginForm({ ...staffLoginForm, password: e.target.value })}
                         disabled={loading}
                         required
                       />
@@ -379,9 +405,7 @@ const Index = () => {
             <Card className="text-center shadow-md hover:shadow-xl transition-shadow">
               <CardHeader>
                 <div className="w-16 h-16 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <IndianRupee className="h-8 w-8 text-indigo-600" />
                 </div>
                 <CardTitle>Quick Loans</CardTitle>
               </CardHeader>
