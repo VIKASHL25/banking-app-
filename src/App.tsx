@@ -1,34 +1,26 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Dashboard from "./pages/Dashboard";
-import StaffDashboard from "./pages/StaffDashboard";
-import { AuthProvider } from "./context/AuthContext";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
+import StaffDashboard from './pages/StaffDashboard';
+import NotFound from './pages/NotFound';
+import { AuthProvider } from './context/AuthContext';
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+function App() {
+  return (
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/staff" element={<StaffDashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/staff" element={<StaffDashboard />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+      <Toaster position="top-right" richColors />
     </AuthProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;

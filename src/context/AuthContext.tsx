@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
   id: number;
@@ -15,101 +15,120 @@ interface Staff {
 }
 
 interface AuthContextType {
+  isLoggedIn: boolean;
+  isStaff: boolean;
   user: User | null;
   staff: Staff | null;
   token: string | null;
-  isLoggedIn: boolean;
-  isStaff: boolean;
-  login: (token: string, userData: User) => void;
-  staffLogin: (token: string, staffData: Staff) => void;
+  login: (token: string, user: User) => void;
+  staffLogin: (token: string, staff: Staff) => void;
   logout: () => void;
-  clearAuthState: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  isLoggedIn: false,
+  isStaff: false,
+  user: null,
+  staff: null,
+  token: null,
+  login: () => {},
+  staffLogin: () => {},
+  logout: () => {},
+});
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [staff, setStaff] = useState<Staff | null>(null);
   const [token, setToken] = useState<string | null>(null);
-
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
+  
+  // Check if user is logged in from local storage
   useEffect(() => {
-    // Check if user is logged in
-    const storedToken = localStorage.getItem("bankingToken");
-    const storedUser = localStorage.getItem("bankingUser");
-    const storedStaff = localStorage.getItem("bankingStaff");
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    const storedStaff = localStorage.getItem('staff');
+    const storedIsStaff = localStorage.getItem('isStaff') === 'true';
     
     if (storedToken) {
       setToken(storedToken);
+      setIsLoggedIn(true);
       
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else if (storedStaff) {
+      if (storedIsStaff && storedStaff) {
+        setIsStaff(true);
         setStaff(JSON.parse(storedStaff));
+      } else if (storedUser) {
+        setIsStaff(false);
+        setUser(JSON.parse(storedUser));
       }
     }
   }, []);
-
-  const clearAuthState = () => {
+  
+  // Login function for regular users
+  const login = (newToken: string, newUser: User) => {
+    setToken(newToken);
+    setUser(newUser);
+    setStaff(null);
+    setIsLoggedIn(true);
+    setIsStaff(false);
+    
+    // Save to local storage
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem('isStaff', 'false');
+    localStorage.removeItem('staff');
+  };
+  
+  // Login function for staff members
+  const staffLogin = (newToken: string, newStaff: Staff) => {
+    setToken(newToken);
+    setStaff(newStaff);
+    setUser(null);
+    setIsLoggedIn(true);
+    setIsStaff(true);
+    
+    // Save to local storage
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('staff', JSON.stringify(newStaff));
+    localStorage.setItem('isStaff', 'true');
+    localStorage.removeItem('user');
+  };
+  
+  // Logout function
+  const logout = () => {
     setToken(null);
     setUser(null);
     setStaff(null);
-    localStorage.removeItem("bankingToken");
-    localStorage.removeItem("bankingUser");
-    localStorage.removeItem("bankingStaff");
-  };
-
-  const login = (token: string, userData: User) => {
-    // Clear any existing auth state first
-    clearAuthState();
+    setIsLoggedIn(false);
+    setIsStaff(false);
     
-    localStorage.setItem("bankingToken", token);
-    localStorage.setItem("bankingUser", JSON.stringify(userData));
-    
-    setToken(token);
-    setUser(userData);
+    // Clear local storage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('staff');
+    localStorage.removeItem('isStaff');
   };
-
-  const staffLogin = (token: string, staffData: Staff) => {
-    // Clear any existing auth state first
-    clearAuthState();
-    
-    localStorage.setItem("bankingToken", token);
-    localStorage.setItem("bankingStaff", JSON.stringify(staffData));
-    
-    setToken(token);
-    setStaff(staffData);
+  
+  const contextValue: AuthContextType = {
+    isLoggedIn,
+    isStaff,
+    user,
+    staff,
+    token,
+    login,
+    staffLogin,
+    logout,
   };
-
-  const logout = () => {
-    clearAuthState();
-  };
-
+  
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        staff,
-        token,
-        isLoggedIn: !!token,
-        isStaff: !!staff,
-        login,
-        staffLogin,
-        logout,
-        clearAuthState
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);

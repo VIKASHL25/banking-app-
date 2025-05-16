@@ -1,10 +1,5 @@
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -137,329 +132,317 @@ const Index = () => {
   };
   
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="homepage">
       {/* Modern Banking Header */}
-      <header className="w-full gradient-primary py-6 px-4 shadow-md">
-        <div className="container mx-auto">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold">SV Bank</h1>
-            <div className="space-x-2">
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20"
+      <header>
+        <div className="container">
+          <div className="header-content">
+            <h1>SV Bank</h1>
+            <div className="nav-buttons">
+              <button 
+                className="customer-btn"
                 onClick={() => {
                   setIsStaffLogin(false);
                   setActiveTab("login");
                 }}
               >
                 Customer Login
-              </Button>
-              <Button 
-                variant="outline" 
-                className="border-white text-white hover:bg-white/20"
+              </button>
+              <button 
+                className="staff-btn"
                 onClick={() => {
                   setIsStaffLogin(true);
                   setActiveTab("login");
                 }}
               >
                 Staff Login
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       </header>
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-indigo-50 to-purple-50 py-16 px-4">
-        <div className="container mx-auto flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 mb-10 md:mb-0">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gray-800">
-              Banking Made <span className="text-indigo-600">Simple</span> for Everyone
-            </h2>
-            <p className="text-lg text-gray-600 mb-8">
-              Experience secure, reliable, and convenient banking services with SV Bank.
-              Manage your finances, apply for loans, and transfer money with ease.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button 
-                size="lg" 
-                className="bg-indigo-600 hover:bg-indigo-700"
-                onClick={() => setActiveTab("register")}
-              >
-                Open an Account
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
-              >
-                Learn More
-              </Button>
+      <section className="hero">
+        <div className="container">
+          <div className="hero-content">
+            <div className="hero-text">
+              <h2>Banking Made <span>Simple</span> for Everyone</h2>
+              <p>
+                Experience secure, reliable, and convenient banking services with SV Bank.
+                Manage your finances, apply for loans, and transfer money with ease.
+              </p>
+              <div className="hero-buttons">
+                <button 
+                  className="primary-btn"
+                  onClick={() => setActiveTab("register")}
+                >
+                  Open an Account
+                </button>
+                <button 
+                  className="secondary-btn"
+                >
+                  Learn More
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="md:w-1/2 md:pl-10">
-            <Card className="glass-card max-w-md mx-auto">
-              <CardHeader>
-                <CardTitle className="text-2xl text-center text-indigo-700">
-                  {isStaffLogin ? "Staff Login" : activeTab === "login" ? "Welcome Back" : "Join SV Bank"}
-                </CardTitle>
-                <CardDescription className="text-center">
-                  {isStaffLogin 
-                    ? "Access the staff portal" 
-                    : activeTab === "login" 
-                      ? "Login to your account" 
-                      : "Create a new account"
-                  }
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                {!isStaffLogin ? (
-                  <Tabs 
-                    defaultValue="login" 
-                    value={activeTab} 
-                    onValueChange={setActiveTab}
-                    className="w-full"
-                  >
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                      <TabsTrigger value="login">Login</TabsTrigger>
-                      <TabsTrigger value="register">Register</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="login">
-                      <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="username">Username</Label>
-                          <Input 
-                            id="username" 
-                            type="text" 
-                            placeholder="Enter your username" 
-                            value={loginForm.username}
-                            onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                            disabled={loading}
-                            required
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="password">Password</Label>
-                          <Input 
-                            id="password" 
-                            type="password" 
-                            placeholder="Enter your password"
-                            value={loginForm.password}
-                            onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                            disabled={loading}
-                            required
-                          />
-                        </div>
-                        
-                        <Button 
-                          type="submit" 
-                          className="w-full bg-indigo-600 hover:bg-indigo-700"
-                          disabled={loading}
+            <div className="login-container">
+              <div className="login-card">
+                <div className="card-header">
+                  <h3 className="card-title">
+                    {isStaffLogin ? "Staff Login" : activeTab === "login" ? "Welcome Back" : "Join SV Bank"}
+                  </h3>
+                  <p className="card-description">
+                    {isStaffLogin 
+                      ? "Access the staff portal" 
+                      : activeTab === "login" 
+                        ? "Login to your account" 
+                        : "Create a new account"
+                    }
+                  </p>
+                </div>
+                
+                <div className="card-content">
+                  {!isStaffLogin ? (
+                    <div className="tabs">
+                      <div className="tabs-list">
+                        <button 
+                          className={`tab-trigger ${activeTab === 'login' ? 'active' : ''}`}
+                          onClick={() => setActiveTab("login")}
                         >
-                          {loading ? 'Processing...' : 'Login'}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                    
-                    <TabsContent value="register">
-                      <form onSubmit={handleRegister} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input 
-                            id="name" 
-                            type="text" 
-                            placeholder="Enter your full name"
-                            value={registerForm.name}
-                            onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
-                            disabled={loading}
-                            required
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="reg-username">Username</Label>
-                          <Input 
-                            id="reg-username" 
-                            type="text" 
-                            placeholder="Choose a username"
-                            value={registerForm.username}
-                            onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
-                            disabled={loading}
-                            required
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="reg-password">Password</Label>
-                          <Input 
-                            id="reg-password" 
-                            type="password" 
-                            placeholder="Choose a password"
-                            value={registerForm.password}
-                            onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                            disabled={loading}
-                            required
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="confirm-password">Confirm Password</Label>
-                          <Input 
-                            id="confirm-password" 
-                            type="password" 
-                            placeholder="Confirm your password"
-                            value={registerForm.confirmPassword}
-                            onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
-                            disabled={loading}
-                            required
-                          />
-                        </div>
-                        
-                        <Button 
-                          type="submit" 
-                          className="w-full bg-indigo-600 hover:bg-indigo-700"
-                          disabled={loading}
+                          Login
+                        </button>
+                        <button 
+                          className={`tab-trigger ${activeTab === 'register' ? 'active' : ''}`}
+                          onClick={() => setActiveTab("register")}
                         >
-                          {loading ? 'Processing...' : 'Register'}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                  </Tabs>
-                ) : (
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="staff-email">Staff Email</Label>
-                      <Input 
-                        id="staff-email" 
-                        type="email" 
-                        placeholder="Enter your staff email" 
-                        value={staffLoginForm.email}
-                        onChange={(e) => setStaffLoginForm({ ...staffLoginForm, email: e.target.value })}
-                        disabled={loading}
-                        required
-                      />
+                          Register
+                        </button>
+                      </div>
+                      
+                      <div className={`tab-content ${activeTab === 'login' ? 'active' : ''}`}>
+                        <form onSubmit={handleLogin} className="form">
+                          <div className="form-group">
+                            <label htmlFor="username">Username</label>
+                            <input 
+                              id="username" 
+                              type="text" 
+                              placeholder="Enter your username" 
+                              value={loginForm.username}
+                              onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                              disabled={loading}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="password">Password</label>
+                            <input 
+                              id="password" 
+                              type="password" 
+                              placeholder="Enter your password"
+                              value={loginForm.password}
+                              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                              disabled={loading}
+                              required
+                            />
+                          </div>
+                          
+                          <button 
+                            type="submit" 
+                            className="submit-btn"
+                            disabled={loading}
+                          >
+                            {loading ? 'Processing...' : 'Login'}
+                          </button>
+                        </form>
+                      </div>
+                      
+                      <div className={`tab-content ${activeTab === 'register' ? 'active' : ''}`}>
+                        <form onSubmit={handleRegister} className="form">
+                          <div className="form-group">
+                            <label htmlFor="name">Full Name</label>
+                            <input 
+                              id="name" 
+                              type="text" 
+                              placeholder="Enter your full name"
+                              value={registerForm.name}
+                              onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                              disabled={loading}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="reg-username">Username</label>
+                            <input 
+                              id="reg-username" 
+                              type="text" 
+                              placeholder="Choose a username"
+                              value={registerForm.username}
+                              onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
+                              disabled={loading}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="reg-password">Password</label>
+                            <input 
+                              id="reg-password" 
+                              type="password" 
+                              placeholder="Choose a password"
+                              value={registerForm.password}
+                              onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                              disabled={loading}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="confirm-password">Confirm Password</label>
+                            <input 
+                              id="confirm-password" 
+                              type="password" 
+                              placeholder="Confirm your password"
+                              value={registerForm.confirmPassword}
+                              onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                              disabled={loading}
+                              required
+                            />
+                          </div>
+                          
+                          <button 
+                            type="submit" 
+                            className="submit-btn"
+                            disabled={loading}
+                          >
+                            {loading ? 'Processing...' : 'Register'}
+                          </button>
+                        </form>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="staff-password">Password</Label>
-                      <Input 
-                        id="staff-password" 
-                        type="password" 
-                        placeholder="Enter your password"
-                        value={staffLoginForm.password}
-                        onChange={(e) => setStaffLoginForm({ ...staffLoginForm, password: e.target.value })}
+                  ) : (
+                    <form onSubmit={handleLogin} className="form">
+                      <div className="form-group">
+                        <label htmlFor="staff-email">Staff Email</label>
+                        <input 
+                          id="staff-email" 
+                          type="email" 
+                          placeholder="Enter your staff email" 
+                          value={staffLoginForm.email}
+                          onChange={(e) => setStaffLoginForm({ ...staffLoginForm, email: e.target.value })}
+                          disabled={loading}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="form-group">
+                        <label htmlFor="staff-password">Password</label>
+                        <input 
+                          id="staff-password" 
+                          type="password" 
+                          placeholder="Enter your password"
+                          value={staffLoginForm.password}
+                          onChange={(e) => setStaffLoginForm({ ...staffLoginForm, password: e.target.value })}
+                          disabled={loading}
+                          required
+                        />
+                      </div>
+                      
+                      <button 
+                        type="submit" 
+                        className="submit-btn"
                         disabled={loading}
-                        required
-                      />
-                    </div>
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                      disabled={loading}
-                    >
-                      {loading ? 'Processing...' : 'Staff Login'}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
+                      >
+                        {loading ? 'Processing...' : 'Staff Login'}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
       
       {/* Features Section */}
-      <section className="py-16 px-4 bg-white">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Our Banking Services</h2>
+      <section className="features">
+        <div className="container">
+          <h2 className="section-title">Our Banking Services</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="text-center shadow-md hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="w-16 h-16 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <CardTitle>Secure Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Safely transfer funds between accounts with our secure transaction system.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="icon-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3>Secure Transactions</h3>
+              <p>
+                Safely transfer funds between accounts with our secure transaction system.
+              </p>
+            </div>
             
-            <Card className="text-center shadow-md hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="w-16 h-16 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                  <IndianRupee className="h-8 w-8 text-indigo-600" />
-                </div>
-                <CardTitle>Quick Loans</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Apply for personal, home, or business loans with competitive interest rates.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="feature-card">
+              <div className="icon-circle">
+                <IndianRupee className="icon" />
+              </div>
+              <h3>Quick Loans</h3>
+              <p>
+                Apply for personal, home, or business loans with competitive interest rates.
+              </p>
+            </div>
             
-            <Card className="text-center shadow-md hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="w-16 h-16 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <CardTitle>Secure Banking</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Experience top-notch security with our advanced data protection systems.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="feature-card">
+              <div className="icon-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <h3>Secure Banking</h3>
+              <p>
+                Experience top-notch security with our advanced data protection systems.
+              </p>
+            </div>
           </div>
         </div>
       </section>
       
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">SV Bank</h3>
-              <p className="text-gray-300">
+      <footer>
+        <div className="container">
+          <div className="footer-content">
+            <div className="footer-section">
+              <h3>SV Bank</h3>
+              <p>
                 Your trusted financial partner for all banking services.
               </p>
             </div>
             
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-300 hover:text-white">Home</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">About Us</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Services</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Contact</a></li>
+            <div className="footer-section">
+              <h4>Quick Links</h4>
+              <ul className="footer-links">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About Us</a></li>
+                <li><a href="#">Services</a></li>
+                <li><a href="#">Contact</a></li>
               </ul>
             </div>
             
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Services</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-300 hover:text-white">Personal Banking</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Business Banking</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Loans</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Investments</a></li>
+            <div className="footer-section">
+              <h4>Services</h4>
+              <ul className="footer-links">
+                <li><a href="#">Personal Banking</a></li>
+                <li><a href="#">Business Banking</a></li>
+                <li><a href="#">Loans</a></li>
+                <li><a href="#">Investments</a></li>
               </ul>
             </div>
             
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
-              <address className="not-italic text-gray-300">
+            <div className="footer-section">
+              <h4>Contact Us</h4>
+              <address>
                 <p>123 Banking Street</p>
                 <p>Financial District</p>
                 <p>support@svbank.com</p>
@@ -468,11 +451,424 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>© {new Date().getFullYear()} SV Bank. All rights reserved.</p>
+          <div className="footer-bottom">
+            <p>&copy; {new Date().getFullYear()} SV Bank. All rights reserved.</p>
           </div>
         </div>
       </footer>
+
+      <style jsx>{`
+        /* Base styles */
+        .homepage {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 1rem;
+        }
+
+        /* Header Styles */
+        header {
+          background-image: linear-gradient(to right, #1e40af, #1e3a8a);
+          color: white;
+          padding: 1.5rem 0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        header h1 {
+          font-size: 1.5rem;
+          font-weight: bold;
+        }
+
+        .nav-buttons {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .customer-btn {
+          background-color: transparent;
+          color: white;
+          border: none;
+        }
+
+        .customer-btn:hover {
+          background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .staff-btn {
+          border: 1px solid white;
+          background-color: transparent;
+          color: white;
+        }
+
+        .staff-btn:hover {
+          background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Hero Section */
+        .hero {
+          background-image: linear-gradient(to bottom right, #eef2ff, #faf5ff);
+          padding: 4rem 0;
+        }
+
+        .hero-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        @media (min-width: 768px) {
+          .hero-content {
+            flex-direction: row;
+          }
+        }
+
+        .hero-text {
+          margin-bottom: 2.5rem;
+          text-align: center;
+        }
+
+        @media (min-width: 768px) {
+          .hero-text {
+            width: 50%;
+            text-align: left;
+            margin-bottom: 0;
+          }
+        }
+
+        .hero h2 {
+          font-size: 2rem;
+          font-weight: bold;
+          color: #1f2937;
+          margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+          .hero h2 {
+            font-size: 3rem;
+          }
+        }
+
+        .hero h2 span {
+          color: #4f46e5;
+        }
+
+        .hero p {
+          font-size: 1.125rem;
+          color: #4b5563;
+          margin-bottom: 2rem;
+        }
+
+        .hero-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .primary-btn {
+          background-color: #4f46e5;
+          color: white;
+          padding: 0.75rem 1.5rem;
+          font-size: 1.125rem;
+          border-radius: 0.5rem;
+          border: none;
+        }
+
+        .primary-btn:hover {
+          background-color: #4338ca;
+        }
+
+        .secondary-btn {
+          background-color: transparent;
+          border: 1px solid #4f46e5;
+          color: #4f46e5;
+          padding: 0.75rem 1.5rem;
+          font-size: 1.125rem;
+          border-radius: 0.5rem;
+        }
+
+        .secondary-btn:hover {
+          background-color: #f5f3ff;
+        }
+
+        .login-container {
+          width: 100%;
+        }
+
+        @media (min-width: 768px) {
+          .login-container {
+            width: 50%;
+            padding-left: 2.5rem;
+          }
+        }
+
+        .login-card {
+          background-color: rgba(255, 255, 255, 0.95);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          backdrop-filter: blur(4px);
+          border-radius: 0.5rem;
+          overflow: hidden;
+          max-width: 28rem;
+          margin: 0 auto;
+        }
+
+        .card-header {
+          padding: 1.5rem;
+          text-align: center;
+        }
+
+        .card-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #4338ca;
+        }
+
+        .card-description {
+          color: #6b7280;
+          margin-top: 0.25rem;
+        }
+
+        .card-content {
+          padding: 0 1.5rem 1.5rem;
+        }
+
+        /* Tabs */
+        .tabs-list {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          margin-bottom: 1rem;
+        }
+
+        .tab-trigger {
+          padding: 0.5rem 1rem;
+          font-size: 1rem;
+          font-weight: 500;
+          text-align: center;
+          background-color: transparent;
+          border: none;
+          border-bottom: 2px solid #e5e7eb;
+          color: #6b7280;
+          transition: all 0.2s ease;
+        }
+
+        .tab-trigger.active {
+          color: #4f46e5;
+          border-bottom-color: #4f46e5;
+        }
+
+        .tab-content {
+          display: none;
+        }
+
+        .tab-content.active {
+          display: block;
+        }
+
+        /* Form */
+        .form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        label {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        input {
+          padding: 0.5rem 1rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.375rem;
+          font-size: 1rem;
+        }
+
+        input:focus {
+          outline: none;
+          border-color: #4f46e5;
+          box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+
+        input:disabled {
+          background-color: #f3f4f6;
+          cursor: not-allowed;
+        }
+
+        .submit-btn {
+          background-color: #4f46e5;
+          color: white;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+          border-radius: 0.375rem;
+          border: none;
+          margin-top: 0.5rem;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        .submit-btn:hover {
+          background-color: #4338ca;
+        }
+
+        .submit-btn:disabled {
+          background-color: #6b7280;
+          cursor: not-allowed;
+        }
+
+        /* Features Section */
+        .features {
+          padding: 4rem 0;
+          background-color: white;
+        }
+
+        .section-title {
+          font-size: 1.875rem;
+          font-weight: bold;
+          color: #1f2937;
+          text-align: center;
+          margin-bottom: 3rem;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+          .features-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        .feature-card {
+          border-radius: 0.5rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          padding: 2rem;
+          text-align: center;
+          transition: box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .icon-circle {
+          width: 4rem;
+          height: 4rem;
+          background-color: #eef2ff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1rem;
+        }
+
+        .icon {
+          width: 2rem;
+          height: 2rem;
+          color: #4f46e5;
+        }
+
+        .feature-card h3 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+          color: #6b7280;
+          line-height: 1.5;
+        }
+
+        /* Footer */
+        footer {
+          background-color: #1f2937;
+          color: white;
+          padding: 3rem 0;
+        }
+
+        .footer-content {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+          .footer-content {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        .footer-section h3 {
+          font-size: 1.25rem;
+          font-weight: bold;
+          margin-bottom: 1rem;
+        }
+
+        .footer-section h4 {
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+
+        .footer-section p {
+          color: #d1d5db;
+        }
+
+        .footer-links {
+          list-style-type: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .footer-links li {
+          margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+          color: #d1d5db;
+          text-decoration: none;
+          transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+          color: white;
+        }
+
+        address {
+          font-style: normal;
+          color: #d1d5db;
+        }
+
+        address p {
+          margin-bottom: 0.25rem;
+        }
+
+        .footer-bottom {
+          border-top: 1px solid #374151;
+          margin-top: 2rem;
+          padding-top: 2rem;
+          text-align: center;
+          color: #9ca3af;
+        }
+      `}</style>
     </div>
   );
 };

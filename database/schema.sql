@@ -1,66 +1,81 @@
 
--- Drop database if exists and create a new one
-DROP DATABASE IF EXISTS banking_app;
-CREATE DATABASE banking_app;
-USE banking_app;
-
--- Create Users table
+-- Users table
 CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL, -- Store as plain text as requested
     name VARCHAR(100) NOT NULL,
+    balance DECIMAL(12, 2) DEFAULT 1000.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create Staff table
+-- Staff table
 CREATE TABLE staff (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL, -- Store as plain text as requested
     name VARCHAR(100) NOT NULL,
-    role VARCHAR(50) NOT NULL DEFAULT 'staff',
+    role VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create Accounts table
-CREATE TABLE accounts (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    account_number VARCHAR(20) NOT NULL UNIQUE,
-    account_type VARCHAR(20) NOT NULL,
-    balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+-- Loan types table
+CREATE TABLE loan_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    interest_rate DECIMAL(5,2) NOT NULL,
+    max_amount DECIMAL(12, 2) NOT NULL,
+    min_duration INT NOT NULL, -- in months
+    max_duration INT NOT NULL, -- in months
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create Transactions table
-CREATE TABLE transactions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    account_id INT NOT NULL,
-    type ENUM('deposit', 'withdraw') NOT NULL,
-    amount DECIMAL(15, 2) NOT NULL,
-    balance_after DECIMAL(15, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
-);
-
--- Create Loans table
+-- Loans table
 CREATE TABLE loans (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    loan_type ENUM('personal', 'home', 'education', 'business') NOT NULL,
-    principal_amount DECIMAL(15, 2) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id),
+    loan_type_id INT REFERENCES loan_types(id),
+    principal_amount DECIMAL(12, 2) NOT NULL,
     interest_rate DECIMAL(5, 2) NOT NULL,
-    start_date DATE,
-    due_date DATE NOT NULL,
-    status ENUM('pending', 'approved', 'rejected', 'paid') NOT NULL DEFAULT 'pending',
-    approved_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (approved_by) REFERENCES staff(id) ON DELETE SET NULL
+    duration_months INT NOT NULL,
+    monthly_payment DECIMAL(12, 2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected, paid
+    approved_by INT REFERENCES staff(id),
+    approved_at TIMESTAMP,
+    due_date TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default staff member with plain text password (now "admin123")
+-- Transactions table
+CREATE TABLE transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id),
+    amount DECIMAL(12, 2) NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL, -- deposit, withdrawal, transfer, loan_disbursement, loan_payment
+    description TEXT,
+    reference_id INT, -- could be loan_id or other transaction id
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default loan types
+INSERT INTO loan_types (name, interest_rate, max_amount, min_duration, max_duration)
+VALUES 
+    ('Personal', 12.5, 500000, 6, 60),
+    ('Home', 8.75, 10000000, 60, 360),
+    ('Education', 7.25, 2000000, 12, 120),
+    ('Vehicle', 9.5, 1500000, 12, 84),
+    ('Business', 14.0, 5000000, 12, 60);
+
+-- Insert default staff
 INSERT INTO staff (email, password, name, role)
-VALUES ('admin@svbank.com', 'admin123', 'Staff Admin', 'admin');
+VALUES 
+    ('admin@svbank.com', 'admin123', 'Admin User', 'Administrator'),
+    ('manager@svbank.com', 'manager123', 'Manager User', 'Branch Manager'),
+    ('loan@svbank.com', 'loan123', 'Loan Officer', 'Loan Officer');
+
+-- Insert demo users
+INSERT INTO users (username, password, name, balance)
+VALUES 
+    ('johndoe', 'pass123', 'John Doe', 25000.50),
+    ('janedoe', 'pass123', 'Jane Doe', 15750.75),
+    ('samsmith', 'pass123', 'Sam Smith', 8500.25);

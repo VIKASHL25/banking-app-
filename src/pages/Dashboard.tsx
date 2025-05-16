@@ -24,13 +24,39 @@ const Dashboard = () => {
   }, [isLoggedIn, isStaff, navigate]);
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800">User Dashboard</h1>
-        <p className="text-lg text-gray-600 mt-4">
+    <div className="dashboard">
+      <div className="dashboard-content">
+        <h1>User Dashboard</h1>
+        <p>
           This page will be implemented in the next phase.
         </p>
       </div>
+
+      <style jsx>{`
+        .dashboard {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-image: linear-gradient(to bottom right, #eef2ff, #faf5ff);
+        }
+        
+        .dashboard-content {
+          text-align: center;
+        }
+        
+        h1 {
+          font-size: 1.875rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+        
+        p {
+          font-size: 1.125rem;
+          color: #4b5563;
+          margin-top: 1rem;
+        }
+      `}</style>
     </div>
   );
 };

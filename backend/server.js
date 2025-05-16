@@ -1,140 +1,116 @@
 
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'svbank-jwt-secret';
+
+// Database connection
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'svbank',
+  password: process.env.DB_PASSWORD || 'postgres',
+  port: process.env.DB_PORT || 5432,
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Database connection
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
-
-// Authentication middleware
+// Verify JWT token middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   
-  if (!token) return res.status(401).json({ error: "Authentication required" });
+  if (!token) {
+    return res.status(401).json({ error: 'Access denied. No token provided.' });
+  }
   
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: "Invalid or expired token" });
-    req.user = user;
+  try {
+    const verified = jwt.verify(token, JWT_SECRET);
+    req.user = verified;
     next();
-  });
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid token.' });
+  }
 };
 
-// Staff authentication middleware
-const authenticateStaff = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  if (!token) return res.status(401).json({ error: "Authentication required" });
-  
-  jwt.verify(token, process.env.JWT_SECRET, (err, staff) => {
-    if (err) return res.status(403).json({ error: "Invalid or expired token" });
-    
-    if (!staff.isStaff) {
-      return res.status(403).json({ error: "Staff access required" });
-    }
-    
-    req.staff = staff;
-    next();
-  });
-};
+// Test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working' });
+});
 
-// Routes
-// Registering a new users
+// User registration
 app.post('/api/register', async (req, res) => {
   try {
     const { username, password, name } = req.body;
     
-    // Validating the inputs
-    if (!username || !password || !name) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-    
-    // Store password as plain text
-    const plainTextPassword = password;
-    
-    // Checking if username already exists
-    const connection = await pool.getConnection();
-    const [existingUsers] = await connection.query('SELECT * FROM users WHERE username = ?', [username]);
-    
-    if (existingUsers.length > 0) {
-      connection.release();
-      return res.status(400).json({ error: "Username already exists" });
-    }
-    
-    // Inserting new user
-    const [result] = await connection.query(
-      'INSERT INTO users (username, password, name) VALUES (?, ?, ?)',
-      [username, plainTextPassword, name]
+    // Check if username exists
+    const userCheck = await pool.query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
     );
     
-    const userId = result.insertId;
+    if (userCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
     
-    //account number random
-    const accountNumber = Math.floor(10000000 + Math.random() * 90000000).toString();
-    
-    //inserting into accounts table
-    await connection.query(
-      'INSERT INTO accounts (user_id, account_number, account_type, balance) VALUES (?, ?, ?, ?)',
-      [userId, accountNumber, 'Savings', 100.00]
+    // Insert user with plain text password as requested
+    const newUser = await pool.query(
+      'INSERT INTO users (username, password, name) VALUES ($1, $2, $3) RETURNING id, username, name',
+      [username, password, name]
     );
     
-    connection.release();
-    
-    res.status(201).json({ message: "Registration successful" });
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: newUser.rows[0]
+    });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: "Server error during registration" });
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 
-// Login authentication for regular users
+// User login
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     
-    const connection = await pool.getConnection();
-    const [users] = await connection.query('SELECT * FROM users WHERE username = ?', [username]);
+    // Find user
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
+    );
     
-    if (users.length === 0) {
-      connection.release();
-      return res.status(401).json({ error: "Invalid username or password" });
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
     
-    const user = users[0];
-    // Direct plain text comparison
-    const match = (password === user.password);
+    const user = userResult.rows[0];
     
-    if (!match) {
-      connection.release();
-      return res.status(401).json({ error: "Invalid username or password" });
+    // Compare plain text passwords as requested
+    if (password !== user.password) {
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
     
+    // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, username: user.username, name: user.name, isStaff: false },
-      process.env.JWT_SECRET,
+      { id: user.id, username: user.username, isStaff: false },
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
     
-    connection.release();
-    
     res.json({
+      message: 'Login successful',
       token,
       user: {
         id: user.id,
@@ -144,41 +120,41 @@ app.post('/api/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: "Server error during login" });
+    res.status(500).json({ error: 'Server error during login' });
   }
 });
 
-// Staff login - Using email instead of username
+// Staff login (using email and password)
 app.post('/api/staff/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const connection = await pool.getConnection();
-    const [staffMembers] = await connection.query('SELECT * FROM staff WHERE email = ?', [email]);
+    // Find staff
+    const staffResult = await pool.query(
+      'SELECT * FROM staff WHERE email = $1',
+      [email]
+    );
     
-    if (staffMembers.length === 0) {
-      connection.release();
-      return res.status(401).json({ error: "Invalid email or password" });
+    if (staffResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
     
-    const staff = staffMembers[0];
-    // Direct plain text comparison
-    const match = (password === staff.password);
+    const staff = staffResult.rows[0];
     
-    if (!match) {
-      connection.release();
-      return res.status(401).json({ error: "Invalid email or password" });
+    // Compare plain text passwords as requested
+    if (password !== staff.password) {
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
     
+    // Generate JWT token
     const token = jwt.sign(
-      { id: staff.id, email: staff.email, name: staff.name, role: staff.role, isStaff: true },
-      process.env.JWT_SECRET,
+      { id: staff.id, email: staff.email, role: staff.role, isStaff: true },
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
     
-    connection.release();
-    
     res.json({
+      message: 'Staff login successful',
       token,
       staff: {
         id: staff.id,
@@ -189,535 +165,189 @@ app.post('/api/staff/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Staff login error:', error);
-    res.status(500).json({ error: "Server error during staff login" });
+    res.status(500).json({ error: 'Server error during staff login' });
   }
 });
 
-// User profile
-app.get('/api/profile', authenticateToken, async (req, res) => {
+// Get current user
+app.get('/api/user', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    
-    const connection = await pool.getConnection();
-    const [accounts] = await connection.query(
-      'SELECT * FROM accounts WHERE user_id = ?',
-      [userId]
-    );
-    
-    if (accounts.length === 0) {
-      connection.release();
-      return res.status(404).json({ error: "No accounts found for this user" });
-    }
-    
-    const account = accounts[0];
-    
-    // reteriving transactions query
-    const [transactions] = await connection.query(
-      'SELECT * FROM transactions WHERE account_id = ? ORDER BY created_at DESC LIMIT 10',
-      [account.id]
-    );
-    
-    // Get user's loans
-    const [loans] = await connection.query(
-      'SELECT l.*, s.name as approved_by_name FROM loans l LEFT JOIN staff s ON l.approved_by = s.id WHERE l.user_id = ? ORDER BY l.created_at DESC',
-      [userId]
-    );
-    
-    connection.release();
-    
-    res.json({
-      name: req.user.name,
-      accountNumber: account.account_number,
-      accountType: account.account_type,
-      balance: parseFloat(account.balance),
-      transactions: transactions.map(t => ({
-        id: t.id,
-        type: t.type,
-        amount: parseFloat(t.amount),
-        balanceAfter: parseFloat(t.balance_after),
-        date: t.created_at
-      })),
-      loans: loans.map(loan => ({
-        id: loan.id,
-        loanType: loan.loan_type,
-        principalAmount: parseFloat(loan.principal_amount),
-        interestRate: parseFloat(loan.interest_rate),
-        startDate: loan.start_date, 
-        dueDate: loan.due_date,
-        status: loan.status,
-        approvedBy: loan.approved_by_name,
-        createdAt: loan.created_at
-      }))
-    });
-  } catch (error) {
-    console.error('Profile fetch error:', error);
-    res.status(500).json({ error: "Server error fetching profile data" });
-  }
-});
-
-// Process a transaction (deposit or withdraw)
-app.post('/api/transaction', authenticateToken, async (req, res) => {
-  try {
-    const { type, amount } = req.body;
-    const userId = req.user.id;
-    
-    // Validating the transaction
-    if (!['deposit', 'withdraw'].includes(type)) {
-      return res.status(400).json({ error: "Invalid transaction type" });
-    }
-    
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-    
-    const connection = await pool.getConnection();
-    await connection.beginTransaction();
-    
-    try {
-      const [accounts] = await connection.query(
-        'SELECT * FROM accounts WHERE user_id = ?',
-        [userId]
+    if (req.user.isStaff) {
+      // Get staff information
+      const staffResult = await pool.query(
+        'SELECT id, email, name, role FROM staff WHERE id = $1',
+        [req.user.id]
       );
       
-      if (accounts.length === 0) {
-        await connection.rollback();
-        connection.release();
-        return res.status(404).json({ error: "No account found" });
+      if (staffResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Staff not found' });
       }
       
-      const account = accounts[0];
+      res.json({ staff: staffResult.rows[0], isStaff: true });
+    } else {
+      // Get user information
+      const userResult = await pool.query(
+        'SELECT id, username, name, balance FROM users WHERE id = $1',
+        [req.user.id]
+      );
       
-      // Checking the witdraw is possible 
-      if (type === 'withdraw' && numAmount > account.balance) {
-        await connection.rollback();
-        connection.release();
-        return res.status(400).json({ error: "Insufficient funds" });
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
       }
       
-      //  new balance
-      const newBalance = type === 'deposit'
-        ? parseFloat(account.balance) + numAmount
-        : parseFloat(account.balance) - numAmount;
-      
-      // Updating  balance
-      await connection.query(
-        'UPDATE accounts SET balance = ? WHERE id = ?',
-        [newBalance, account.id]
-      );
-      
-      // Recording the  transaction
-      await connection.query(
-        'INSERT INTO transactions (account_id, type, amount, balance_after) VALUES (?, ?, ?, ?)',
-        [account.id, type, numAmount, newBalance]
-      );
-      
-      await connection.commit();
-      
-      // Get updated transactions
-      const [transactions] = await connection.query(
-        'SELECT * FROM transactions WHERE account_id = ? ORDER BY created_at DESC LIMIT 10',
-        [account.id]
-      );
-      
-      connection.release();
-      
-      res.json({
-        success: true,
-        balance: newBalance,
-        transactions: transactions.map(t => ({
-          id: t.id,
-          type: t.type,
-          amount: parseFloat(t.amount),
-          balanceAfter: parseFloat(t.balance_after),
-          date: t.created_at
-        }))
-      });
-    } catch (error) {
-      await connection.rollback();
-      connection.release();
-      throw error;
+      res.json({ user: userResult.rows[0], isStaff: false });
     }
   } catch (error) {
-    console.error('Transaction error:', error);
-    res.status(500).json({ error: "Server error processing transaction" });
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Server error while getting user information' });
   }
 });
 
-// Get transaction history
-app.get('/api/transactions', authenticateToken, async (req, res) => {
+// Get pending loans (staff only)
+app.get('/api/staff/loans/pending', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    
-    const connection = await pool.getConnection();
-    
-    // Get the account
-    const [accounts] = await connection.query(
-      'SELECT * FROM accounts WHERE user_id = ?',
-      [userId]
-    );
-    
-    if (accounts.length === 0) {
-      connection.release();
-      return res.status(404).json({ error: "No account found" });
+    // Check if staff
+    if (!req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. Staff only.' });
     }
     
-    const accountId = accounts[0].id;
+    // Get pending loans
+    const loansResult = await pool.query(`
+      SELECT l.id, l.principal_amount, l.interest_rate, l.due_date, l.created_at,
+             u.id as user_id, u.name as user_name,
+             lt.name as loan_type
+      FROM loans l
+      JOIN users u ON l.user_id = u.id
+      JOIN loan_types lt ON l.loan_type_id = lt.id
+      WHERE l.status = 'pending'
+      ORDER BY l.created_at DESC
+    `);
     
+    const pendingLoans = loansResult.rows.map(loan => ({
+      id: loan.id,
+      userId: loan.user_id,
+      userName: loan.user_name,
+      loanType: loan.loan_type,
+      principalAmount: loan.principal_amount,
+      interestRate: loan.interest_rate,
+      dueDate: loan.due_date,
+      createdAt: loan.created_at
+    }));
     
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 30;
-    const offset = (page - 1) * limit;
-    
-    const [transactions] = await connection.query(
-      'SELECT * FROM transactions WHERE account_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [accountId, limit, offset]
-    );
-    
-    // Count total transactions
-    const [countResult] = await connection.query(
-      'SELECT COUNT(*) as total FROM transactions WHERE account_id = ?',
-      [accountId]
-    );
-    
-    connection.release();
-    
-    res.json({
-      transactions: transactions.map(t => ({
-        id: t.id,
-        type: t.type,
-        amount: parseFloat(t.amount),
-        balanceAfter: parseFloat(t.balance_after),
-        date: t.created_at
-      })),
-      totalCount: countResult[0].total,
-      page,
-      limit
-    });
+    res.json({ pendingLoans });
   } catch (error) {
-    console.error('Transactions fetch error:', error);
-    res.status(500).json({ error: "Server error fetching transactions" });
+    console.error('Get pending loans error:', error);
+    res.status(500).json({ error: 'Server error while getting pending loans' });
   }
 });
 
-// Apply for a loan
-app.post('/api/loans/apply', authenticateToken, async (req, res) => {
+// Process loan (approve or reject) - staff only
+app.post('/api/staff/loans/:id/process', authenticateToken, async (req, res) => {
   try {
-    const { loanType, principalAmount, interestRate, dueDate } = req.body;
-    const userId = req.user.id;
-    
-    // Validate inputs
-    if (!loanType || !principalAmount || !interestRate || !dueDate) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-    
-    // Additional validations
-    const numPrincipal = parseFloat(principalAmount);
-    const numInterest = parseFloat(interestRate);
-    
-    if (isNaN(numPrincipal) || numPrincipal <= 0) {
-      return res.status(400).json({ error: "Invalid principal amount" });
-    }
-    
-    if (isNaN(numInterest) || numInterest <= 0 || numInterest > 100) {
-      return res.status(400).json({ error: "Invalid interest rate" });
-    }
-    
-    const connection = await pool.getConnection();
-    
-    // Insert loan application
-    await connection.query(
-      'INSERT INTO loans (user_id, loan_type, principal_amount, interest_rate, due_date, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, loanType, numPrincipal, numInterest, dueDate, 'pending']
-    );
-    
-    // Get updated loans
-    const [loans] = await connection.query(
-      'SELECT l.*, s.name as approved_by_name FROM loans l LEFT JOIN staff s ON l.approved_by = s.id WHERE l.user_id = ? ORDER BY l.created_at DESC',
-      [userId]
-    );
-    
-    connection.release();
-    
-    res.status(201).json({
-      message: "Loan application submitted successfully",
-      loans: loans.map(loan => ({
-        id: loan.id,
-        loanType: loan.loan_type,
-        principalAmount: parseFloat(loan.principal_amount),
-        interestRate: parseFloat(loan.interest_rate),
-        startDate: loan.start_date,
-        dueDate: loan.due_date,
-        status: loan.status,
-        approvedBy: loan.approved_by_name,
-        createdAt: loan.created_at
-      }))
-    });
-  } catch (error) {
-    console.error('Loan application error:', error);
-    res.status(500).json({ error: "Server error processing loan application" });
-  }
-});
-
-// Staff: Get all pending loans
-app.get('/api/staff/loans/pending', authenticateStaff, async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    
-    const [loans] = await connection.query(
-      'SELECT l.*, u.name as user_name FROM loans l JOIN users u ON l.user_id = u.id WHERE l.status = "pending" ORDER BY l.created_at ASC'
-    );
-    
-    connection.release();
-    
-    res.json({
-      pendingLoans: loans.map(loan => ({
-        id: loan.id,
-        userName: loan.user_name,
-        userId: loan.user_id,
-        loanType: loan.loan_type,
-        principalAmount: parseFloat(loan.principal_amount),
-        interestRate: parseFloat(loan.interest_rate),
-        dueDate: loan.due_date,
-        createdAt: loan.created_at
-      }))
-    });
-  } catch (error) {
-    console.error('Pending loans fetch error:', error);
-    res.status(500).json({ error: "Server error fetching pending loans" });
-  }
-});
-
-// Staff: Approve or reject a loan
-app.post('/api/staff/loans/:loanId/process', authenticateStaff, async (req, res) => {
-  try {
-    const { loanId } = req.params;
+    const { id } = req.params;
     const { action } = req.body;
-    const staffId = req.staff.id;
     
-    if (!['approve', 'reject'].includes(action)) {
-      return res.status(400).json({ error: "Invalid action" });
+    // Check if staff
+    if (!req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. Staff only.' });
     }
     
-    const connection = await pool.getConnection();
-    await connection.beginTransaction();
+    if (action !== 'approve' && action !== 'reject') {
+      return res.status(400).json({ error: 'Invalid action. Must be approve or reject.' });
+    }
     
+    // Start transaction
+    const client = await pool.connect();
     try {
-      // Get the loan details
-      const [loans] = await connection.query(
-        'SELECT * FROM loans WHERE id = ?',
-        [loanId]
-      );
-      
-      if (loans.length === 0) {
-        await connection.rollback();
-        connection.release();
-        return res.status(404).json({ error: "Loan not found" });
-      }
-      
-      const loan = loans[0];
-      
-      if (loan.status !== 'pending') {
-        await connection.rollback();
-        connection.release();
-        return res.status(400).json({ error: "This loan application has already been processed" });
-      }
-      
-      const newStatus = action === 'approve' ? 'approved' : 'rejected';
-      const startDate = action === 'approve' ? new Date().toISOString().split('T')[0] : null;
+      await client.query('BEGIN');
       
       // Update loan status
-      await connection.query(
-        'UPDATE loans SET status = ?, approved_by = ?, start_date = ? WHERE id = ?',
-        [newStatus, staffId, startDate, loanId]
+      await client.query(
+        `UPDATE loans SET 
+         status = $1, 
+         approved_by = $2, 
+         approved_at = CURRENT_TIMESTAMP 
+         WHERE id = $3`,
+        [action === 'approve' ? 'approved' : 'rejected', req.user.id, id]
       );
       
-      // If approved, credit the loan amount to the user's account
+      // If approved, add loan amount to user's balance
       if (action === 'approve') {
-        // Get user's account
-        const [accounts] = await connection.query(
-          'SELECT * FROM accounts WHERE user_id = ?',
-          [loan.user_id]
+        // Get loan details
+        const loanResult = await client.query(
+          'SELECT user_id, principal_amount FROM loans WHERE id = $1',
+          [id]
         );
         
-        if (accounts.length === 0) {
-          await connection.rollback();
-          connection.release();
-          return res.status(404).json({ error: "User account not found" });
+        if (loanResult.rows.length === 0) {
+          throw new Error('Loan not found');
         }
         
-        const account = accounts[0];
-        const newBalance = parseFloat(account.balance) + parseFloat(loan.principal_amount);
+        const { user_id, principal_amount } = loanResult.rows[0];
         
-        // Update account balance
-        await connection.query(
-          'UPDATE accounts SET balance = ? WHERE id = ?',
-          [newBalance, account.id]
+        // Add loan amount to user's balance
+        await client.query(
+          'UPDATE users SET balance = balance + $1 WHERE id = $2',
+          [principal_amount, user_id]
         );
         
-        // Record the transaction
-        await connection.query(
-          'INSERT INTO transactions (account_id, type, amount, balance_after) VALUES (?, ?, ?, ?)',
-          [account.id, 'deposit', loan.principal_amount, newBalance]
+        // Record transaction
+        await client.query(
+          `INSERT INTO transactions 
+           (user_id, amount, transaction_type, description, reference_id) 
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            user_id, 
+            principal_amount, 
+            'loan_disbursement',
+            'Loan approved and disbursed',
+            id
+          ]
         );
       }
       
-      await connection.commit();
+      await client.query('COMMIT');
       
-      // Get updated list of pending loans
-      const [pendingLoans] = await connection.query(
-        'SELECT l.*, u.name as user_name FROM loans l JOIN users u ON l.user_id = u.id WHERE l.status = "pending" ORDER BY l.created_at ASC'
-      );
+      // Get updated pending loans
+      const loansResult = await pool.query(`
+        SELECT l.id, l.principal_amount, l.interest_rate, l.due_date, l.created_at,
+               u.id as user_id, u.name as user_name,
+               lt.name as loan_type
+        FROM loans l
+        JOIN users u ON l.user_id = u.id
+        JOIN loan_types lt ON l.loan_type_id = lt.id
+        WHERE l.status = 'pending'
+        ORDER BY l.created_at DESC
+      `);
       
-      connection.release();
+      const pendingLoans = loansResult.rows.map(loan => ({
+        id: loan.id,
+        userId: loan.user_id,
+        userName: loan.user_name,
+        loanType: loan.loan_type,
+        principalAmount: loan.principal_amount,
+        interestRate: loan.interest_rate,
+        dueDate: loan.due_date,
+        createdAt: loan.created_at
+      }));
       
-      res.json({
-        message: action === 'approve' ? "Loan approved successfully" : "Loan rejected",
-        pendingLoans: pendingLoans.map(loan => ({
-          id: loan.id,
-          userName: loan.user_name,
-          userId: loan.user_id,
-          loanType: loan.loan_type,
-          principalAmount: parseFloat(loan.principal_amount),
-          interestRate: parseFloat(loan.interest_rate),
-          dueDate: loan.due_date,
-          createdAt: loan.created_at
-        }))
+      res.json({ 
+        message: `Loan ${action === 'approve' ? 'approved' : 'rejected'} successfully`, 
+        pendingLoans 
       });
     } catch (error) {
-      await connection.rollback();
-      connection.release();
+      await client.query('ROLLBACK');
       throw error;
+    } finally {
+      client.release();
     }
   } catch (error) {
-    console.error('Loan processing error:', error);
-    res.status(500).json({ error: "Server error processing loan" });
+    console.error(`Process loan error:`, error);
+    res.status(500).json({ error: `Server error while processing loan` });
   }
 });
 
-// Transfer money between accounts
-app.post('/api/transfer', authenticateToken, async (req, res) => {
-  try {
-    const { recipientAccountNumber, amount } = req.body;
-    const userId = req.user.id;
-    
-    // Validate input
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-    
-    if (!recipientAccountNumber) {
-      return res.status(400).json({ error: "Recipient account number is required" });
-    }
-    
-    const connection = await pool.getConnection();
-    await connection.beginTransaction();
-    
-    try {
-      // Get sender's account
-      const [senderAccounts] = await connection.query(
-        'SELECT * FROM accounts WHERE user_id = ?',
-        [userId]
-      );
-      
-      if (senderAccounts.length === 0) {
-        await connection.rollback();
-        connection.release();
-        return res.status(404).json({ error: "Sender account not found" });
-      }
-      
-      const senderAccount = senderAccounts[0];
-      
-      // Check if sender has enough balance
-      if (parseFloat(senderAccount.balance) < numAmount) {
-        await connection.rollback();
-        connection.release();
-        return res.status(400).json({ error: "Insufficient funds" });
-      }
-      
-      // Get recipient's account
-      const [recipientAccounts] = await connection.query(
-        'SELECT * FROM accounts WHERE account_number = ?',
-        [recipientAccountNumber]
-      );
-      
-      if (recipientAccounts.length === 0) {
-        await connection.rollback();
-        connection.release();
-        return res.status(404).json({ error: "Recipient account not found" });
-      }
-      
-      const recipientAccount = recipientAccounts[0];
-      
-      // Check if sender is not transferring to the same account
-      if (senderAccount.id === recipientAccount.id) {
-        await connection.rollback();
-        connection.release();
-        return res.status(400).json({ error: "Cannot transfer to your own account" });
-      }
-      
-      // Update sender's balance
-      const newSenderBalance = parseFloat(senderAccount.balance) - numAmount;
-      await connection.query(
-        'UPDATE accounts SET balance = ? WHERE id = ?',
-        [newSenderBalance, senderAccount.id]
-      );
-      
-      // Record sender's transaction
-      await connection.query(
-        'INSERT INTO transactions (account_id, type, amount, balance_after) VALUES (?, ?, ?, ?)',
-        [senderAccount.id, 'withdraw', numAmount, newSenderBalance]
-      );
-      
-      // Update recipient's balance
-      const newRecipientBalance = parseFloat(recipientAccount.balance) + numAmount;
-      await connection.query(
-        'UPDATE accounts SET balance = ? WHERE id = ?',
-        [newRecipientBalance, recipientAccount.id]
-      );
-      
-      // Record recipient's transaction
-      await connection.query(
-        'INSERT INTO transactions (account_id, type, amount, balance_after) VALUES (?, ?, ?, ?)',
-        [recipientAccount.id, 'deposit', numAmount, newRecipientBalance]
-      );
-      
-      await connection.commit();
-      
-      // Get updated transactions
-      const [transactions] = await connection.query(
-        'SELECT * FROM transactions WHERE account_id = ? ORDER BY created_at DESC LIMIT 10',
-        [senderAccount.id]
-      );
-      
-      connection.release();
-      
-      res.json({
-        success: true,
-        message: "Transfer successful",
-        balance: newSenderBalance,
-        transactions: transactions.map(t => ({
-          id: t.id,
-          type: t.type,
-          amount: parseFloat(t.amount),
-          balanceAfter: parseFloat(t.balance_after),
-          date: t.created_at
-        }))
-      });
-    } catch (error) {
-      await connection.rollback();
-      connection.release();
-      throw error;
-    }
-  } catch (error) {
-    console.error('Transfer error:', error);
-    res.status(500).json({ error: "Server error processing transfer" });
-  }
-});
-
-// server start
-const PORT = process.env.PORT || 5000;
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

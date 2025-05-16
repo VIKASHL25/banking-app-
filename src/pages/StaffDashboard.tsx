@@ -2,8 +2,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle, XCircle, UserCheck, IndianRupee } from "lucide-react";
 import { formatCurrency } from "@/utils/formatting";
@@ -97,133 +95,125 @@ const StaffDashboard = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="staff-dashboard">
       {/* Header */}
-      <header className="w-full bg-gradient-to-r from-blue-800 to-indigo-900 text-white py-4 shadow-md">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center">
+      <header>
+        <div className="header-container">
+          <div className="header-content">
             <div>
-              <h1 className="text-2xl font-bold">SV Bank Staff Portal</h1>
-              <p className="text-sm text-blue-200">Loan Management System</p>
+              <h1>SV Bank Staff Portal</h1>
+              <p className="subtitle">Loan Management System</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="font-semibold">{staff?.name}</p>
-                <p className="text-sm text-blue-200">{staff?.role}</p>
+            <div className="user-info">
+              <div className="user-details">
+                <p className="user-name">{staff?.name}</p>
+                <p className="user-role">{staff?.role}</p>
               </div>
-              <Button 
-                variant="outline" 
-                className="border-white text-white hover:bg-white/20"
+              <button 
+                className="logout-btn"
                 onClick={() => {
                   logout();
                   navigate("/");
                 }}
               >
                 Logout
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       </header>
       
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-8 px-4">
-        <div className="flex items-center justify-between mb-8">
+      <main>
+        <div className="main-header">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Loan Applications</h2>
-            <p className="text-gray-600">Review and process customer loan applications</p>
+            <h2>Loan Applications</h2>
+            <p>Review and process customer loan applications</p>
           </div>
-          <Button
+          <button
+            className="refresh-btn"
             onClick={fetchPendingLoans}
-            className="bg-blue-600 hover:bg-blue-700"
             disabled={loading}
           >
             Refresh List
-          </Button>
+          </button>
         </div>
         
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-xl text-blue-600">Loading...</p>
-            </div>
+          <div className="loading-container">
+            <div className="loading-indicator"></div>
+            <p>Loading...</p>
           </div>
         ) : (
           <>
             {pendingLoans.length === 0 ? (
-              <Card className="border-2 border-dashed border-gray-300 rounded-lg">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <AlertCircle className="h-12 w-12 text-blue-500 mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No Pending Applications</h3>
-                  <p className="text-gray-500 text-center max-w-md">
+              <div className="no-loans-card">
+                <div className="no-loans-content">
+                  <AlertCircle className="alert-icon" />
+                  <h3>No Pending Applications</h3>
+                  <p>
                     There are no loan applications waiting for your review at the moment.
                     Check back later or refresh the list.
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="loans-grid">
                 {pendingLoans.map((loan) => (
-                  <Card key={loan.id} className="overflow-hidden border-t-4 border-blue-500 rounded-lg">
-                    <CardHeader className="bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="capitalize">{loan.loanType} Loan</CardTitle>
-                          <CardDescription className="mt-1 flex items-center">
-                            <UserCheck className="h-4 w-4 mr-1" />
-                            {loan.userName}
-                          </CardDescription>
+                  <div key={loan.id} className="loan-card">
+                    <div className="loan-header">
+                      <div>
+                        <h3 className="loan-type">{loan.loanType} Loan</h3>
+                        <div className="user-info-small">
+                          <UserCheck size={16} />
+                          <span>{loan.userName}</span>
                         </div>
-                        <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1 rounded">
-                          PENDING
-                        </span>
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-2 gap-4 mb-6">
+                      <span className="status-badge">PENDING</span>
+                    </div>
+                    <div className="loan-content">
+                      <div className="loan-details">
                         <div>
-                          <p className="text-sm text-gray-500">Principal Amount</p>
-                          <p className="text-lg font-semibold flex items-center">
-                            <IndianRupee className="h-4 w-4 mr-1" />
+                          <p className="detail-label">Principal Amount</p>
+                          <p className="detail-value">
+                            <IndianRupee size={16} />
                             {formatCurrency(loan.principalAmount)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Interest Rate</p>
-                          <p className="text-lg font-semibold">{loan.interestRate}%</p>
+                          <p className="detail-label">Interest Rate</p>
+                          <p className="detail-value">{loan.interestRate}%</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Due Date</p>
-                          <p className="font-semibold">{new Date(loan.dueDate).toLocaleDateString()}</p>
+                          <p className="detail-label">Due Date</p>
+                          <p className="detail-value">{new Date(loan.dueDate).toLocaleDateString()}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Applied On</p>
-                          <p className="font-semibold">{new Date(loan.createdAt).toLocaleDateString()}</p>
+                          <p className="detail-label">Applied On</p>
+                          <p className="detail-value">{new Date(loan.createdAt).toLocaleDateString()}</p>
                         </div>
                       </div>
                       
-                      <div className="flex justify-between gap-4 mt-4">
-                        <Button
-                          variant="outline"
-                          className="border-red-500 text-red-500 hover:bg-red-50 flex items-center w-1/2"
+                      <div className="loan-actions">
+                        <button
+                          className="reject-btn"
                           onClick={() => processLoan(loan.id, 'reject')}
                           disabled={loading}
                         >
-                          <XCircle className="h-4 w-4 mr-2" />
+                          <XCircle size={16} />
                           Reject
-                        </Button>
-                        <Button
-                          className="bg-green-600 hover:bg-green-700 flex items-center w-1/2"
+                        </button>
+                        <button
+                          className="approve-btn"
                           onClick={() => processLoan(loan.id, 'approve')}
                           disabled={loading}
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <CheckCircle size={16} />
                           Approve
-                        </Button>
+                        </button>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -232,11 +222,302 @@ const StaffDashboard = () => {
       </main>
       
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-6">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p>&copy; {new Date().getFullYear()} SV Bank Staff Portal. All rights reserved.</p>
-        </div>
+      <footer>
+        <p>&copy; {new Date().getFullYear()} SV Bank Staff Portal. All rights reserved.</p>
       </footer>
+
+      <style jsx>{`
+        .staff-dashboard {
+          min-height: 100vh;
+          background-image: linear-gradient(to bottom right, #f9fafb, #eff6ff);
+        }
+        
+        header {
+          width: 100%;
+          background-image: linear-gradient(to right, #1e40af, #312e81);
+          color: white;
+          padding: 1rem 0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-container {
+          max-width: 80rem;
+          margin: 0 auto;
+          padding: 0 1rem;
+        }
+        
+        .header-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        h1 {
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+        
+        .subtitle {
+          font-size: 0.875rem;
+          color: #bfdbfe;
+        }
+        
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .user-details {
+          text-align: right;
+        }
+        
+        .user-name {
+          font-weight: 600;
+        }
+        
+        .user-role {
+          font-size: 0.875rem;
+          color: #bfdbfe;
+        }
+        
+        .logout-btn {
+          border: 1px solid white;
+          background-color: transparent;
+          color: white;
+          padding: 0.5rem 1rem;
+          border-radius: 0.375rem;
+        }
+        
+        .logout-btn:hover {
+          background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        main {
+          max-width: 80rem;
+          margin: 0 auto;
+          padding: 2rem 1rem;
+        }
+        
+        .main-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 2rem;
+        }
+        
+        h2 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+        
+        .main-header p {
+          color: #4b5563;
+        }
+        
+        .refresh-btn {
+          background-color: #2563eb;
+          color: white;
+          padding: 0.5rem 1rem;
+          border-radius: 0.375rem;
+        }
+        
+        .refresh-btn:hover {
+          background-color: #1d4ed8;
+        }
+        
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 0;
+        }
+        
+        .loading-indicator {
+          width: 4rem;
+          height: 4rem;
+          border: 4px solid rgba(37, 99, 235, 0.2);
+          border-top-color: #2563eb;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 1rem;
+        }
+        
+        .loading-container p {
+          font-size: 1.25rem;
+          color: #2563eb;
+        }
+        
+        .no-loans-card {
+          border: 2px dashed #d1d5db;
+          border-radius: 0.5rem;
+        }
+        
+        .no-loans-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 1rem;
+        }
+        
+        .alert-icon {
+          height: 3rem;
+          width: 3rem;
+          color: #3b82f6;
+          margin-bottom: 1rem;
+        }
+        
+        .no-loans-content h3 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+        
+        .no-loans-content p {
+          color: #6b7280;
+          text-align: center;
+          max-width: 28rem;
+        }
+        
+        .loans-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+        }
+        
+        @media (min-width: 768px) {
+          .loans-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        
+        @media (min-width: 1200px) {
+          .loans-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        
+        .loan-card {
+          border-radius: 0.5rem;
+          overflow: hidden;
+          border: 1px solid #e5e7eb;
+          border-top: 4px solid #3b82f6;
+        }
+        
+        .loan-header {
+          background-color: #f9fafb;
+          padding: 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+        
+        .loan-type {
+          font-size: 1.25rem;
+          font-weight: 600;
+          text-transform: capitalize;
+        }
+        
+        .user-info-small {
+          margin-top: 0.25rem;
+          display: flex;
+          align-items: center;
+          color: #6b7280;
+          font-size: 0.875rem;
+        }
+        
+        .user-info-small svg {
+          margin-right: 0.25rem;
+        }
+        
+        .status-badge {
+          background-color: #fef3c7;
+          color: #92400e;
+          font-size: 0.75rem;
+          font-weight: 600;
+          padding: 0.25rem 0.5rem;
+          border-radius: 0.25rem;
+        }
+        
+        .loan-content {
+          padding: 1.5rem;
+        }
+        
+        .loan-details {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        
+        .detail-label {
+          font-size: 0.875rem;
+          color: #6b7280;
+        }
+        
+        .detail-value {
+          font-size: 1.125rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+        }
+        
+        .detail-value svg {
+          margin-right: 0.25rem;
+        }
+        
+        .loan-actions {
+          display: flex;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        
+        .reject-btn, .approve-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem 1rem;
+          border-radius: 0.375rem;
+          width: 50%;
+        }
+        
+        .reject-btn {
+          border: 1px solid #ef4444;
+          color: #ef4444;
+          background-color: transparent;
+        }
+        
+        .reject-btn:hover {
+          background-color: #fef2f2;
+        }
+        
+        .approve-btn {
+          background-color: #16a34a;
+          color: white;
+        }
+        
+        .approve-btn:hover {
+          background-color: #15803d;
+        }
+        
+        .reject-btn svg, .approve-btn svg {
+          margin-right: 0.5rem;
+        }
+        
+        footer {
+          background-color: #1f2937;
+          color: white;
+          padding: 1.5rem 0;
+          text-align: center;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
