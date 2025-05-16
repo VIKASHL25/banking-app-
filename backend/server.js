@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
@@ -147,7 +148,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Staff login - Updated to use email instead of username
+// Staff login - Using email instead of username
 app.post('/api/staff/login', async (req, res) => {
   try {
     const { email, password } = req.body;

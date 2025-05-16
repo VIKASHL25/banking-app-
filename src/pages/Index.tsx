@@ -9,17 +9,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { IndianRupee } from "lucide-react";
-
-// API URL
-const API_URL = "http://localhost:5000/api";
-
-// Format currency utility with Rupee symbol
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-IN', { 
-    style: 'currency', 
-    currency: 'INR' 
-  }).format(amount);
-};
+import { formatCurrency } from "@/utils/formatting";
+import { API_URL } from "@/utils/constants";
 
 const Index = () => {
   const { login, staffLogin, isLoggedIn } = useAuth();
