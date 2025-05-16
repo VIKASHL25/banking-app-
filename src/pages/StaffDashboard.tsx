@@ -10,9 +10,9 @@ import { AlertCircle, CheckCircle, XCircle, UserCheck } from "lucide-react";
 // API URL
 const API_URL = "http://localhost:5000/api";
 
-// Format currency utility
+// Format currency utility with Rupee symbol
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', symbol: '₹' }).format(amount);
 };
 
 interface PendingLoan {
@@ -103,19 +103,46 @@ const StaffDashboard = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #f8fafc, #e0f2fe)" }}>
       {/* Header */}
-      <header className="w-full bg-gradient-to-r from-blue-700 to-blue-900 text-white py-4 shadow-md">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center">
+      <header style={{ 
+        width: "100%", 
+        background: "linear-gradient(to right, #1e40af, #1e3a8a)", 
+        color: "white", 
+        padding: "1rem 0", 
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)" 
+      }}>
+        <div style={{ 
+          maxWidth: "1200px", 
+          margin: "0 auto", 
+          padding: "0 1rem" 
+        }}>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center" 
+          }}>
             <div>
-              <h1 className="text-2xl font-bold">SV Bank Staff Portal</h1>
-              <p className="text-sm text-blue-200">Loan Management System</p>
+              <h1 style={{ 
+                fontSize: "1.5rem", 
+                fontWeight: "bold" 
+              }}>SV Bank Staff Portal</h1>
+              <p style={{ 
+                fontSize: "0.875rem", 
+                color: "#bfdbfe" 
+              }}>Loan Management System</p>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="font-semibold">{staff?.name}</p>
-                <p className="text-sm text-blue-200">{staff?.role}</p>
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "1rem" 
+            }}>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontWeight: "600" }}>{staff?.name}</p>
+                <p style={{ 
+                  fontSize: "0.875rem", 
+                  color: "#bfdbfe" 
+                }}>{staff?.role}</p>
               </div>
               <Button 
                 variant="outline" 
@@ -133,11 +160,24 @@ const StaffDashboard = () => {
       </header>
       
       {/* Main Content */}
-      <main className="container mx-auto py-8 px-4">
-        <div className="flex items-center justify-between mb-8">
+      <main style={{ 
+        maxWidth: "1200px", 
+        margin: "0 auto", 
+        padding: "2rem 1rem" 
+      }}>
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "space-between", 
+          marginBottom: "2rem" 
+        }}>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Loan Applications</h2>
-            <p className="text-gray-600">Review and process customer loan applications</p>
+            <h2 style={{ 
+              fontSize: "1.5rem", 
+              fontWeight: "bold", 
+              color: "#1f2937" 
+            }}>Loan Applications</h2>
+            <p style={{ color: "#4b5563" }}>Review and process customer loan applications</p>
           </div>
           <Button
             onClick={fetchPendingLoans}
@@ -149,64 +189,164 @@ const StaffDashboard = () => {
         </div>
         
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-xl text-blue-600">Loading...</p>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            padding: "3rem 0" 
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ 
+                width: "4rem", 
+                height: "4rem", 
+                border: "4px solid #2563eb", 
+                borderTopColor: "transparent", 
+                borderRadius: "50%", 
+                animation: "spin 1s linear infinite", 
+                margin: "0 auto 1rem auto" 
+              }}></div>
+              <p style={{ 
+                fontSize: "1.25rem", 
+                color: "#2563eb" 
+              }}>Loading...</p>
+              <style>
+                {`
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                `}
+              </style>
             </div>
           </div>
         ) : (
           <>
             {pendingLoans.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <AlertCircle className="h-12 w-12 text-blue-500 mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No Pending Applications</h3>
-                  <p className="text-gray-500 text-center max-w-md">
+              <Card style={{ 
+                border: "2px dashed #d1d5db", 
+                borderRadius: "0.5rem" 
+              }}>
+                <CardContent style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  padding: "3rem" 
+                }}>
+                  <AlertCircle style={{ 
+                    height: "3rem", 
+                    width: "3rem", 
+                    color: "#3b82f6", 
+                    marginBottom: "1rem" 
+                  }} />
+                  <h3 style={{ 
+                    fontSize: "1.25rem", 
+                    fontWeight: "600", 
+                    marginBottom: "0.5rem" 
+                  }}>No Pending Applications</h3>
+                  <p style={{ 
+                    color: "#6b7280", 
+                    textAlign: "center", 
+                    maxWidth: "28rem" 
+                  }}>
                     There are no loan applications waiting for your review at the moment.
                     Check back later or refresh the list.
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div style={{ 
+                display: "grid", 
+                gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 24rem), 1fr))", 
+                gap: "1.5rem" 
+              }}>
                 {pendingLoans.map((loan) => (
-                  <Card key={loan.id} className="overflow-hidden border-t-4 border-t-blue-500">
-                    <CardHeader className="bg-gray-50">
-                      <div className="flex justify-between items-start">
+                  <Card key={loan.id} style={{ 
+                    overflow: "hidden", 
+                    borderTop: "4px solid #3b82f6", 
+                    borderRadius: "0.5rem" 
+                  }}>
+                    <CardHeader style={{ background: "#f9fafb" }}>
+                      <div style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "flex-start" 
+                      }}>
                         <div>
-                          <CardTitle className="capitalize">{loan.loanType} Loan</CardTitle>
-                          <CardDescription className="mt-1 flex items-center">
-                            <UserCheck className="h-4 w-4 mr-1" />
+                          <CardTitle style={{ 
+                            textTransform: "capitalize" 
+                          }}>{loan.loanType} Loan</CardTitle>
+                          <CardDescription style={{ 
+                            marginTop: "0.25rem", 
+                            display: "flex", 
+                            alignItems: "center" 
+                          }}>
+                            <UserCheck style={{ 
+                              height: "1rem", 
+                              width: "1rem", 
+                              marginRight: "0.25rem" 
+                            }} />
                             {loan.userName}
                           </CardDescription>
                         </div>
-                        <span className="bg-amber-100 text-amber-800 text-xs font-semibold py-1 px-2 rounded">
+                        <span style={{ 
+                          background: "#fef3c7", 
+                          color: "#92400e", 
+                          fontSize: "0.75rem", 
+                          fontWeight: "600", 
+                          padding: "0.25rem 0.5rem", 
+                          borderRadius: "0.25rem" 
+                        }}>
                           PENDING
                         </span>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-2 gap-4 mb-6">
+                    <CardContent style={{ paddingTop: "1.5rem" }}>
+                      <div style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "1fr 1fr", 
+                        gap: "1rem", 
+                        marginBottom: "1.5rem" 
+                      }}>
                         <div>
-                          <p className="text-sm text-gray-500">Principal Amount</p>
-                          <p className="font-semibold text-lg">{formatCurrency(loan.principalAmount)}</p>
+                          <p style={{ 
+                            fontSize: "0.875rem", 
+                            color: "#6b7280" 
+                          }}>Principal Amount</p>
+                          <p style={{ 
+                            fontWeight: "600", 
+                            fontSize: "1.125rem" 
+                          }}>{formatCurrency(loan.principalAmount)}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Interest Rate</p>
-                          <p className="font-semibold text-lg">{loan.interestRate}%</p>
+                          <p style={{ 
+                            fontSize: "0.875rem", 
+                            color: "#6b7280" 
+                          }}>Interest Rate</p>
+                          <p style={{ 
+                            fontWeight: "600", 
+                            fontSize: "1.125rem" 
+                          }}>{loan.interestRate}%</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Due Date</p>
-                          <p className="font-semibold">{new Date(loan.dueDate).toLocaleDateString()}</p>
+                          <p style={{ 
+                            fontSize: "0.875rem", 
+                            color: "#6b7280" 
+                          }}>Due Date</p>
+                          <p style={{ fontWeight: "600" }}>{new Date(loan.dueDate).toLocaleDateString()}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Applied On</p>
-                          <p className="font-semibold">{new Date(loan.createdAt).toLocaleDateString()}</p>
+                          <p style={{ 
+                            fontSize: "0.875rem", 
+                            color: "#6b7280" 
+                          }}>Applied On</p>
+                          <p style={{ fontWeight: "600" }}>{new Date(loan.createdAt).toLocaleDateString()}</p>
                         </div>
                       </div>
                       
-                      <div className="flex justify-between mt-4">
+                      <div style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        marginTop: "1rem" 
+                      }}>
                         <Button
                           variant="outline"
                           className="border-red-500 text-red-500 hover:bg-red-50 flex items-center"
@@ -235,8 +375,17 @@ const StaffDashboard = () => {
       </main>
       
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-6">
-        <div className="container mx-auto px-4 text-center">
+      <footer style={{ 
+        background: "#1f2937", 
+        color: "white", 
+        padding: "1.5rem 0" 
+      }}>
+        <div style={{ 
+          maxWidth: "1200px", 
+          margin: "0 auto", 
+          padding: "0 1rem", 
+          textAlign: "center" 
+        }}>
           <p>&copy; {new Date().getFullYear()} SV Bank Staff Portal. All rights reserved.</p>
         </div>
       </footer>

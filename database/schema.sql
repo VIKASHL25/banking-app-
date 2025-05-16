@@ -62,7 +62,7 @@ CREATE TABLE loans (
     FOREIGN KEY (approved_by) REFERENCES staff(id) ON DELETE SET NULL
 );
 
--- Insert default staff member
+-- Insert default staff member with plain text password
 INSERT INTO staff (username, password, name, email, role)
-VALUES ('admin', '$2b$10$3IeJ9nNbguRWmHXaJo6XuOQCJMY1lsFiQdV38VyacnJ7ho2B3ioE2', 'Staff Admin', 'admin@svbank.com', 'admin');
--- Password is "staffpass"
+VALUES ('admin', 'staffpass', 'Staff Admin', 'admin@svbank.com', 'admin');
+-- Plain text password is now "staffpass"
