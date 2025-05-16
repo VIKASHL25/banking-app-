@@ -1,7 +1,7 @@
+
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
@@ -66,8 +66,8 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: "All fields are required" });
     }
     
-    // Hashing the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Store password as plain text
+    const plainTextPassword = password;
     
     // Checking if username already exists
     const connection = await pool.getConnection();
@@ -81,7 +81,7 @@ app.post('/api/register', async (req, res) => {
     // Inserting new user
     const [result] = await connection.query(
       'INSERT INTO users (username, password, name) VALUES (?, ?, ?)',
-      [username, hashedPassword, name]
+      [username, plainTextPassword, name]
     );
     
     const userId = result.insertId;
@@ -118,7 +118,8 @@ app.post('/api/login', async (req, res) => {
     }
     
     const user = users[0];
-    const match = await bcrypt.compare(password, user.password);
+    // Direct plain text comparison
+    const match = (password === user.password);
     
     if (!match) {
       connection.release();
@@ -161,7 +162,8 @@ app.post('/api/staff/login', async (req, res) => {
     }
     
     const staff = staffMembers[0];
-    const match = await bcrypt.compare(password, staff.password);
+    // Direct plain text comparison
+    const match = (password === staff.password);
     
     if (!match) {
       connection.release();
