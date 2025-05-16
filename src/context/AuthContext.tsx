@@ -9,9 +9,8 @@ interface User {
 
 interface Staff {
   id: number;
-  username: string;
-  name: string;
   email: string;
+  name: string;
   role: string;
 }
 
