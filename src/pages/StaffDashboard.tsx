@@ -226,7 +226,8 @@ const StaffDashboard = () => {
         <p>&copy; {new Date().getFullYear()} SV Bank Staff Portal. All rights reserved.</p>
       </footer>
 
-      <style jsx>{`
+      <style>
+        {`
         .staff-dashboard {
           min-height: 100vh;
           background-image: linear-gradient(to bottom right, #f9fafb, #eff6ff);
@@ -517,7 +518,8 @@ const StaffDashboard = () => {
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

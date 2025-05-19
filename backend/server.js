@@ -137,11 +137,16 @@ app.post('/api/staff/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    // Debug
+    console.log('Staff login attempt:', { email, password });
+    
     // Find staff
     const [staffMembers] = await pool.query(
       'SELECT * FROM staff WHERE email = ?',
       [email]
     );
+    
+    console.log('Found staff members:', staffMembers);
     
     if (staffMembers.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });

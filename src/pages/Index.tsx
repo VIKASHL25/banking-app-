@@ -457,7 +457,8 @@ const Index = () => {
         </div>
       </footer>
 
-      <style jsx>{`
+      <style>
+        {`
         /* Base styles */
         .homepage {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -868,7 +869,8 @@ const Index = () => {
           text-align: center;
           color: #9ca3af;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
