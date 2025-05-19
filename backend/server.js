@@ -1,7 +1,7 @@
 
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const path = require('path');
@@ -13,13 +13,16 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'svbank-jwt-secret';
 
-// Database connection
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
+// Create MySQL connection pool
+const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'svbank',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: process.env.DB_PORT || 5432,
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 // Middleware
@@ -55,24 +58,29 @@ app.post('/api/register', async (req, res) => {
     const { username, password, name } = req.body;
     
     // Check if username exists
-    const userCheck = await pool.query(
-      'SELECT * FROM users WHERE username = $1',
+    const [userCheck] = await pool.query(
+      'SELECT * FROM users WHERE username = ?',
       [username]
     );
     
-    if (userCheck.rows.length > 0) {
+    if (userCheck.length > 0) {
       return res.status(400).json({ error: 'Username already exists' });
     }
     
     // Insert user with plain text password as requested
-    const newUser = await pool.query(
-      'INSERT INTO users (username, password, name) VALUES ($1, $2, $3) RETURNING id, username, name',
+    const [result] = await pool.query(
+      'INSERT INTO users (username, password, name) VALUES (?, ?, ?)',
       [username, password, name]
+    );
+    
+    const [newUser] = await pool.query(
+      'SELECT id, username, name FROM users WHERE id = ?',
+      [result.insertId]
     );
     
     res.status(201).json({
       message: 'User registered successfully',
-      user: newUser.rows[0]
+      user: newUser[0]
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -86,16 +94,16 @@ app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     
     // Find user
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE username = $1',
+    const [users] = await pool.query(
+      'SELECT * FROM users WHERE username = ?',
       [username]
     );
     
-    if (userResult.rows.length === 0) {
+    if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
     
-    const user = userResult.rows[0];
+    const user = users[0];
     
     // Compare plain text passwords as requested
     if (password !== user.password) {
@@ -130,16 +138,16 @@ app.post('/api/staff/login', async (req, res) => {
     const { email, password } = req.body;
     
     // Find staff
-    const staffResult = await pool.query(
-      'SELECT * FROM staff WHERE email = $1',
+    const [staffMembers] = await pool.query(
+      'SELECT * FROM staff WHERE email = ?',
       [email]
     );
     
-    if (staffResult.rows.length === 0) {
+    if (staffMembers.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     
-    const staff = staffResult.rows[0];
+    const staff = staffMembers[0];
     
     // Compare plain text passwords as requested
     if (password !== staff.password) {
@@ -174,28 +182,28 @@ app.get('/api/user', authenticateToken, async (req, res) => {
   try {
     if (req.user.isStaff) {
       // Get staff information
-      const staffResult = await pool.query(
-        'SELECT id, email, name, role FROM staff WHERE id = $1',
+      const [staffMembers] = await pool.query(
+        'SELECT id, email, name, role FROM staff WHERE id = ?',
         [req.user.id]
       );
       
-      if (staffResult.rows.length === 0) {
+      if (staffMembers.length === 0) {
         return res.status(404).json({ error: 'Staff not found' });
       }
       
-      res.json({ staff: staffResult.rows[0], isStaff: true });
+      res.json({ staff: staffMembers[0], isStaff: true });
     } else {
       // Get user information
-      const userResult = await pool.query(
-        'SELECT id, username, name, balance FROM users WHERE id = $1',
+      const [users] = await pool.query(
+        'SELECT id, username, name, balance FROM users WHERE id = ?',
         [req.user.id]
       );
       
-      if (userResult.rows.length === 0) {
+      if (users.length === 0) {
         return res.status(404).json({ error: 'User not found' });
       }
       
-      res.json({ user: userResult.rows[0], isStaff: false });
+      res.json({ user: users[0], isStaff: false });
     }
   } catch (error) {
     console.error('Get user error:', error);
@@ -212,7 +220,7 @@ app.get('/api/staff/loans/pending', authenticateToken, async (req, res) => {
     }
     
     // Get pending loans
-    const loansResult = await pool.query(`
+    const [loans] = await pool.query(`
       SELECT l.id, l.principal_amount, l.interest_rate, l.due_date, l.created_at,
              u.id as user_id, u.name as user_name,
              lt.name as loan_type
@@ -223,7 +231,7 @@ app.get('/api/staff/loans/pending', authenticateToken, async (req, res) => {
       ORDER BY l.created_at DESC
     `);
     
-    const pendingLoans = loansResult.rows.map(loan => ({
+    const pendingLoans = loans.map(loan => ({
       id: loan.id,
       userId: loan.user_id,
       userName: loan.user_name,
@@ -257,45 +265,45 @@ app.post('/api/staff/loans/:id/process', authenticateToken, async (req, res) => 
     }
     
     // Start transaction
-    const client = await pool.connect();
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
     try {
-      await client.query('BEGIN');
-      
       // Update loan status
-      await client.query(
+      await connection.query(
         `UPDATE loans SET 
-         status = $1, 
-         approved_by = $2, 
+         status = ?, 
+         approved_by = ?, 
          approved_at = CURRENT_TIMESTAMP 
-         WHERE id = $3`,
+         WHERE id = ?`,
         [action === 'approve' ? 'approved' : 'rejected', req.user.id, id]
       );
       
       // If approved, add loan amount to user's balance
       if (action === 'approve') {
         // Get loan details
-        const loanResult = await client.query(
-          'SELECT user_id, principal_amount FROM loans WHERE id = $1',
+        const [loanResult] = await connection.query(
+          'SELECT user_id, principal_amount FROM loans WHERE id = ?',
           [id]
         );
         
-        if (loanResult.rows.length === 0) {
+        if (loanResult.length === 0) {
           throw new Error('Loan not found');
         }
         
-        const { user_id, principal_amount } = loanResult.rows[0];
+        const { user_id, principal_amount } = loanResult[0];
         
         // Add loan amount to user's balance
-        await client.query(
-          'UPDATE users SET balance = balance + $1 WHERE id = $2',
+        await connection.query(
+          'UPDATE users SET balance = balance + ? WHERE id = ?',
           [principal_amount, user_id]
         );
         
         // Record transaction
-        await client.query(
+        await connection.query(
           `INSERT INTO transactions 
            (user_id, amount, transaction_type, description, reference_id) 
-           VALUES ($1, $2, $3, $4, $5)`,
+           VALUES (?, ?, ?, ?, ?)`,
           [
             user_id, 
             principal_amount, 
@@ -306,10 +314,10 @@ app.post('/api/staff/loans/:id/process', authenticateToken, async (req, res) => 
         );
       }
       
-      await client.query('COMMIT');
+      await connection.commit();
       
       // Get updated pending loans
-      const loansResult = await pool.query(`
+      const [loans] = await pool.query(`
         SELECT l.id, l.principal_amount, l.interest_rate, l.due_date, l.created_at,
                u.id as user_id, u.name as user_name,
                lt.name as loan_type
@@ -320,7 +328,7 @@ app.post('/api/staff/loans/:id/process', authenticateToken, async (req, res) => 
         ORDER BY l.created_at DESC
       `);
       
-      const pendingLoans = loansResult.rows.map(loan => ({
+      const pendingLoans = loans.map(loan => ({
         id: loan.id,
         userId: loan.user_id,
         userName: loan.user_name,
@@ -336,10 +344,10 @@ app.post('/api/staff/loans/:id/process', authenticateToken, async (req, res) => 
         pendingLoans 
       });
     } catch (error) {
-      await client.query('ROLLBACK');
+      await connection.rollback();
       throw error;
     } finally {
-      client.release();
+      connection.release();
     }
   } catch (error) {
     console.error(`Process loan error:`, error);

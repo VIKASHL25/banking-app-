@@ -32,7 +32,8 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <style jsx>{`
+      <style>
+        {`
         .dashboard {
           min-height: 100vh;
           display: flex;
@@ -56,7 +57,8 @@ const Dashboard = () => {
           color: #4b5563;
           margin-top: 1rem;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 
 -- Users table
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(100) NOT NULL, -- Store as plain text as requested
     name VARCHAR(100) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE users (
 
 -- Staff table
 CREATE TABLE staff (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(100) NOT NULL, -- Store as plain text as requested
     name VARCHAR(100) NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE staff (
 
 -- Loan types table
 CREATE TABLE loan_types (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     interest_rate DECIMAL(5,2) NOT NULL,
     max_amount DECIMAL(12, 2) NOT NULL,
@@ -32,29 +32,33 @@ CREATE TABLE loan_types (
 
 -- Loans table
 CREATE TABLE loans (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id),
-    loan_type_id INT REFERENCES loan_types(id),
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    loan_type_id INT,
     principal_amount DECIMAL(12, 2) NOT NULL,
     interest_rate DECIMAL(5, 2) NOT NULL,
     duration_months INT NOT NULL,
     monthly_payment DECIMAL(12, 2) NOT NULL,
     status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected, paid
-    approved_by INT REFERENCES staff(id),
-    approved_at TIMESTAMP,
+    approved_by INT,
+    approved_at TIMESTAMP NULL,
     due_date TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (loan_type_id) REFERENCES loan_types(id),
+    FOREIGN KEY (approved_by) REFERENCES staff(id)
 );
 
 -- Transactions table
 CREATE TABLE transactions (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id),
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
     amount DECIMAL(12, 2) NOT NULL,
     transaction_type VARCHAR(20) NOT NULL, -- deposit, withdrawal, transfer, loan_disbursement, loan_payment
     description TEXT,
     reference_id INT, -- could be loan_id or other transaction id
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Insert default loan types
