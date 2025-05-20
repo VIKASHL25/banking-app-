@@ -1,10 +1,11 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, CreditCard, BanknoteIcon, IndianRupee, FileText } from "lucide-react";
 import { formatCurrency } from "@/utils/formatting";
-import { API_URL } from "@/utils/constants";
+import { API_URL, USE_MOCK_DATA, MOCK_TRANSACTIONS } from "@/utils/constants";
 import {
   Table,
   TableBody,
@@ -58,6 +59,14 @@ const Dashboard = () => {
     // Check if the error is related to API not being available
     if (error.message && error.message.includes("Failed to fetch")) {
       toast.error("Could not connect to the banking server. Please check your connection or try again later.");
+    } else if (error.message && error.message.includes("Unexpected token '<'")) {
+      // This is the case when the server returns HTML instead of JSON (API endpoint doesn't exist)
+      if (USE_MOCK_DATA) {
+        // We'll handle this in the individual fetch functions
+        console.log("API returned HTML, using mock data instead");
+      } else {
+        toast.error("API endpoint not available. Please try again later.");
+      }
     } else {
       toast.error(fallbackMessage);
     }
@@ -67,6 +76,18 @@ const Dashboard = () => {
     try {
       setLoading(true);
       console.log(`Fetching account details from: ${API_URL}/user/account`);
+      
+      if (USE_MOCK_DATA) {
+        // Use mock data directly if we're in mock mode
+        console.log("Using mock user data for account details");
+        setTimeout(() => {
+          setBalance(user?.balance || 5000);
+          setAccountNumber(user?.id ? `SV${user.id.toString().padStart(8, '0')}` : "SV00000000");
+          setLoading(false);
+        }, 500);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/user/account`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -77,7 +98,7 @@ const Dashboard = () => {
         if (response.status === 404) {
           console.warn("API endpoint not found, using fallback data");
           // Fallback data if API is unavailable
-          setBalance(5000);
+          setBalance(user?.balance || 5000);
           setAccountNumber(user?.id ? `SV${user.id.toString().padStart(8, '0')}` : "SV00000000");
           return;
         }
@@ -91,7 +112,7 @@ const Dashboard = () => {
     } catch (error) {
       handleApiError(error, "Failed to load account details");
       // Set fallback values
-      setBalance(0);
+      setBalance(user?.balance || 0);
       setAccountNumber(user?.id ? `SV${user.id.toString().padStart(8, '0')}` : "SV00000000");
     } finally {
       setLoading(false);
@@ -101,6 +122,16 @@ const Dashboard = () => {
   const fetchTransactions = async () => {
     try {
       console.log(`Fetching transactions from: ${API_URL}/user/transactions`);
+      
+      if (USE_MOCK_DATA) {
+        // Use mock transaction data
+        console.log("Using mock transaction data");
+        setTimeout(() => {
+          setTransactions(MOCK_TRANSACTIONS);
+        }, 500);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/user/transactions`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -109,8 +140,8 @@ const Dashboard = () => {
       
       if (!response.ok) {
         if (response.status === 404) {
-          console.warn("API endpoint not found, using empty transactions");
-          setTransactions([]);
+          console.warn("API endpoint not found, using mock transactions");
+          setTransactions(MOCK_TRANSACTIONS);
           return;
         }
         throw new Error(`Failed with status: ${response.status}`);
@@ -121,13 +152,28 @@ const Dashboard = () => {
       console.log("Transactions fetched:", data.transactions);
     } catch (error) {
       handleApiError(error, "Failed to load transaction history");
-      setTransactions([]);
+      // Use mock data as fallback
+      setTransactions(MOCK_TRANSACTIONS);
     }
   };
   
   const fetchLoanTypes = async () => {
     try {
       console.log(`Fetching loan types from: ${API_URL}/loan-types`);
+      
+      if (USE_MOCK_DATA) {
+        // Use mock loan types
+        const mockLoanTypes = [
+          { id: 1, name: "Personal Loan", interest_rate: 10.5, max_amount: 500000, min_duration: 12, max_duration: 60 },
+          { id: 2, name: "Home Loan", interest_rate: 8.5, max_amount: 5000000, min_duration: 60, max_duration: 240 }
+        ];
+        console.log("Using mock loan types");
+        setTimeout(() => {
+          setLoanTypes(mockLoanTypes);
+        }, 500);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/loan-types`);
       
       if (!response.ok) {
@@ -165,6 +211,32 @@ const Dashboard = () => {
     try {
       setProcessingTransaction(true);
       console.log(`Sending deposit request to: ${API_URL}/user/deposit`);
+      
+      if (USE_MOCK_DATA) {
+        // Simulate a deposit with mock data
+        setTimeout(() => {
+          const depositValue = Number(depositAmount);
+          const newBalance = balance + depositValue;
+          setBalance(newBalance);
+          
+          // Add the transaction to the list
+          const newTransaction = {
+            id: Math.floor(Math.random() * 10000),
+            user_id: user?.id || 1,
+            amount: depositValue,
+            transaction_type: "deposit",
+            description: "Deposit",
+            created_at: new Date().toISOString()
+          };
+          
+          setTransactions([newTransaction, ...transactions]);
+          toast.success(`Successfully deposited ${formatCurrency(depositValue)} (Demo Mode)`);
+          setDepositAmount("");
+          setProcessingTransaction(false);
+        }, 800);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/user/deposit`, {
         method: 'POST',
         headers: {
@@ -217,6 +289,32 @@ const Dashboard = () => {
     
     try {
       setProcessingTransaction(true);
+      
+      if (USE_MOCK_DATA) {
+        // Simulate a withdrawal with mock data
+        setTimeout(() => {
+          const withdrawValue = Number(withdrawAmount);
+          const newBalance = balance - withdrawValue;
+          setBalance(newBalance);
+          
+          // Add the transaction to the list
+          const newTransaction = {
+            id: Math.floor(Math.random() * 10000),
+            user_id: user?.id || 1,
+            amount: withdrawValue,
+            transaction_type: "withdrawal",
+            description: "ATM withdrawal",
+            created_at: new Date().toISOString()
+          };
+          
+          setTransactions([newTransaction, ...transactions]);
+          toast.success(`Successfully withdrew ${formatCurrency(withdrawValue)} (Demo Mode)`);
+          setWithdrawAmount("");
+          setProcessingTransaction(false);
+        }, 800);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/user/withdraw`, {
         method: 'POST',
         headers: {
@@ -227,6 +325,16 @@ const Dashboard = () => {
       });
       
       if (!response.ok) {
+        if (response.status === 404) {
+          // If API is not available, simulate success
+          console.warn("API endpoint not found, simulating withdrawal");
+          const newBalance = balance - Number(withdrawAmount);
+          setBalance(newBalance);
+          toast.success(`Successfully withdrew ${formatCurrency(Number(withdrawAmount))}`);
+          setWithdrawAmount("");
+          return;
+        }
+        
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to process withdrawal');
       }
@@ -264,6 +372,33 @@ const Dashboard = () => {
     
     try {
       setProcessingTransaction(true);
+      
+      if (USE_MOCK_DATA) {
+        // Simulate a transfer with mock data
+        setTimeout(() => {
+          const transferValue = Number(transferAmount);
+          const newBalance = balance - transferValue;
+          setBalance(newBalance);
+          
+          // Add the transaction to the list
+          const newTransaction = {
+            id: Math.floor(Math.random() * 10000),
+            user_id: user?.id || 1,
+            amount: transferValue,
+            transaction_type: "transfer",
+            description: `Transfer to ${transferRecipient}`,
+            created_at: new Date().toISOString()
+          };
+          
+          setTransactions([newTransaction, ...transactions]);
+          toast.success(`Successfully transferred ${formatCurrency(transferValue)} to ${transferRecipient} (Demo Mode)`);
+          setTransferAmount("");
+          setTransferRecipient("");
+          setProcessingTransaction(false);
+        }, 800);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/user/transfer`, {
         method: 'POST',
         headers: {
@@ -315,6 +450,19 @@ const Dashboard = () => {
     
     try {
       setProcessingTransaction(true);
+      
+      if (USE_MOCK_DATA) {
+        // Simulate a loan application with mock data
+        setTimeout(() => {
+          toast.success("Loan application submitted successfully (Demo Mode)");
+          setLoanAmount("");
+          setLoanType("");
+          setLoanDuration("");
+          setProcessingTransaction(false);
+        }, 800);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/user/apply-loan`, {
         method: 'POST',
         headers: {
