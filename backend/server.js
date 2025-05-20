@@ -25,8 +25,13 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Middleware
-app.use(cors());
+// Enable CORS for all origins in development
+app.use(cors({
+  origin: '*', // In production, replace with specific origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Verify JWT token middleware
@@ -43,9 +48,21 @@ const authenticateToken = (req, res, next) => {
     req.user = verified;
     next();
   } catch (error) {
-    res.status(400).json({ error: 'Invalid token.' });
+    console.error('Token verification error:', error);
+    res.status(401).json({ error: 'Invalid token.' });
   }
 };
+
+// Test database connection at startup
+(async () => {
+  try {
+    const connection = await pool.getConnection();
+    console.log('Successfully connected to MySQL database');
+    connection.release();
+  } catch (error) {
+    console.error('Failed to connect to MySQL database:', error);
+  }
+})();
 
 // Test route
 app.get('/api/test', (req, res) => {
@@ -92,6 +109,7 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    console.log('User login attempt:', { username });
     
     // Find user
     const [users] = await pool.query(
@@ -117,6 +135,8 @@ app.post('/api/login', async (req, res) => {
       { expiresIn: '24h' }
     );
     
+    console.log('User login successful:', { id: user.id, username: user.username });
+    
     res.json({
       message: 'Login successful',
       token,
@@ -137,8 +157,7 @@ app.post('/api/staff/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Debug
-    console.log('Staff login attempt:', { email, password });
+    console.log('Staff login attempt:', { email });
     
     // Find staff
     const [staffMembers] = await pool.query(
@@ -156,6 +175,7 @@ app.post('/api/staff/login', async (req, res) => {
     
     // Compare plain text passwords as requested
     if (password !== staff.password) {
+      console.log('Password mismatch:', { provided: password, stored: staff.password });
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     
@@ -165,6 +185,8 @@ app.post('/api/staff/login', async (req, res) => {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
+    
+    console.log('Staff login successful:', { id: staff.id, email: staff.email, role: staff.role });
     
     res.json({
       message: 'Staff login successful',

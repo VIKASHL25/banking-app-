@@ -83,3 +83,14 @@ VALUES
     ('johndoe', 'pass123', 'John Doe', 25000.50),
     ('janedoe', 'pass123', 'Jane Doe', 15750.75),
     ('samsmith', 'pass123', 'Sam Smith', 8500.25);
+
+-- Insert some sample transactions for demo users
+INSERT INTO transactions (user_id, amount, transaction_type, description)
+VALUES
+    (1, 5000.00, 'deposit', 'Initial deposit'),
+    (1, 1200.00, 'withdrawal', 'ATM withdrawal'),
+    (1, 3500.00, 'transfer', 'Transfer to Jane Doe'),
+    (2, 3500.00, 'deposit', 'Transfer from John Doe'),
+    (2, 2000.00, 'deposit', 'Salary deposit'),
+    (3, 1500.00, 'deposit', 'Refund received'),
+    (3, 750.00, 'withdrawal', 'Cash withdrawal');

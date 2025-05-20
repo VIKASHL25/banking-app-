@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -17,7 +16,7 @@ import {
 } from "@/components/ui/table";
 
 const Dashboard = () => {
-  const { isLoggedIn, isStaff, user, token } = useAuth();
+  const { isLoggedIn, isStaff, user, token, logout } = useAuth();
   const navigate = useNavigate();
   
   const [balance, setBalance] = useState(0);
@@ -51,7 +50,7 @@ const Dashboard = () => {
     fetchAccountDetails();
     fetchTransactions();
     fetchLoanTypes();
-  }, [isLoggedIn, isStaff, navigate]);
+  }, [isLoggedIn, isStaff, navigate, token]);
   
   const fetchAccountDetails = async () => {
     try {
@@ -69,6 +68,7 @@ const Dashboard = () => {
       const data = await response.json();
       setBalance(data.balance);
       setAccountNumber(data.accountNumber || `SV${user?.id.toString().padStart(8, '0')}`);
+      console.log("Account details fetched:", data);
     } catch (error) {
       console.error("Error fetching account details:", error);
       toast.error("Failed to load account details");
@@ -91,6 +91,7 @@ const Dashboard = () => {
       
       const data = await response.json();
       setTransactions(data.transactions);
+      console.log("Transactions fetched:", data.transactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       toast.error("Failed to load transaction history");
@@ -141,7 +142,7 @@ const Dashboard = () => {
       setBalance(data.newBalance);
       toast.success(`Successfully deposited ${formatCurrency(Number(depositAmount))}`);
       setDepositAmount("");
-      fetchTransactions();
+      fetchTransactions(); // Refresh transactions after deposit
     } catch (error) {
       console.error("Deposit error:", error);
       toast.error((error as Error).message || "Failed to process deposit");
@@ -338,6 +339,11 @@ const Dashboard = () => {
     }
   };
   
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+  
   return (
     <div className="dashboard">
       {/* Header */}
@@ -351,9 +357,7 @@ const Dashboard = () => {
               </div>
               <button 
                 className="logout-btn"
-                onClick={() => {
-                  navigate("/");
-                }}
+                onClick={handleLogout}
               >
                 Logout
               </button>
@@ -914,4 +918,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

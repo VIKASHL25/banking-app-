@@ -33,7 +33,7 @@ const StaffDashboard = () => {
     }
     
     fetchPendingLoans();
-  }, [isLoggedIn, isStaff, navigate]);
+  }, [isLoggedIn, isStaff, navigate, token]);
   
   // Fetch pending loans
   const fetchPendingLoans = async () => {
@@ -93,6 +93,12 @@ const StaffDashboard = () => {
       setLoading(false);
     }
   };
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
   
   return (
     <div className="staff-dashboard">
@@ -111,10 +117,7 @@ const StaffDashboard = () => {
               </div>
               <button 
                 className="logout-btn"
-                onClick={() => {
-                  logout();
-                  navigate("/");
-                }}
+                onClick={handleLogout}
               >
                 Logout
               </button>
