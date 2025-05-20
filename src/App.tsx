@@ -1,11 +1,12 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'sonner';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './context/AuthContext';
+import { Toaster as SonnerToaster } from 'sonner';
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
   return (
@@ -18,7 +19,8 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-      <Toaster position="top-right" richColors />
+      <SonnerToaster position="top-right" richColors />
+      <Toaster />
     </AuthProvider>
   );
 }
