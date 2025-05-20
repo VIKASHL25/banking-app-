@@ -116,7 +116,7 @@ const Dashboard = () => {
   const handleDeposit = async (e) => {
     e.preventDefault();
     
-    if (!depositAmount || isNaN(depositAmount) || parseFloat(depositAmount) <= 0) {
+    if (!depositAmount || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
@@ -129,7 +129,7 @@ const Dashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ amount: parseFloat(depositAmount) })
+        body: JSON.stringify({ amount: Number(depositAmount) })
       });
       
       if (!response.ok) {
@@ -139,7 +139,7 @@ const Dashboard = () => {
       
       const data = await response.json();
       setBalance(data.newBalance);
-      toast.success(`Successfully deposited ${formatCurrency(parseFloat(depositAmount))}`);
+      toast.success(`Successfully deposited ${formatCurrency(Number(depositAmount))}`);
       setDepositAmount("");
       fetchTransactions();
     } catch (error) {
@@ -153,12 +153,12 @@ const Dashboard = () => {
   const handleWithdraw = async (e) => {
     e.preventDefault();
     
-    if (!withdrawAmount || isNaN(withdrawAmount) || parseFloat(withdrawAmount) <= 0) {
+    if (!withdrawAmount || isNaN(Number(withdrawAmount)) || Number(withdrawAmount) <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
     
-    if (parseFloat(withdrawAmount) > balance) {
+    if (Number(withdrawAmount) > balance) {
       toast.error("Insufficient funds");
       return;
     }
@@ -171,7 +171,7 @@ const Dashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ amount: parseFloat(withdrawAmount) })
+        body: JSON.stringify({ amount: Number(withdrawAmount) })
       });
       
       if (!response.ok) {
@@ -181,7 +181,7 @@ const Dashboard = () => {
       
       const data = await response.json();
       setBalance(data.newBalance);
-      toast.success(`Successfully withdrew ${formatCurrency(parseFloat(withdrawAmount))}`);
+      toast.success(`Successfully withdrew ${formatCurrency(Number(withdrawAmount))}`);
       setWithdrawAmount("");
       fetchTransactions();
     } catch (error) {
@@ -195,7 +195,7 @@ const Dashboard = () => {
   const handleTransfer = async (e) => {
     e.preventDefault();
     
-    if (!transferAmount || isNaN(transferAmount) || parseFloat(transferAmount) <= 0) {
+    if (!transferAmount || isNaN(Number(transferAmount)) || Number(transferAmount) <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
@@ -205,7 +205,7 @@ const Dashboard = () => {
       return;
     }
     
-    if (parseFloat(transferAmount) > balance) {
+    if (Number(transferAmount) > balance) {
       toast.error("Insufficient funds");
       return;
     }
@@ -219,7 +219,7 @@ const Dashboard = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          amount: parseFloat(transferAmount),
+          amount: Number(transferAmount),
           recipientUsername: transferRecipient
         })
       });
@@ -231,7 +231,7 @@ const Dashboard = () => {
       
       const data = await response.json();
       setBalance(data.newBalance);
-      toast.success(`Successfully transferred ${formatCurrency(parseFloat(transferAmount))} to ${transferRecipient}`);
+      toast.success(`Successfully transferred ${formatCurrency(Number(transferAmount))} to ${transferRecipient}`);
       setTransferAmount("");
       setTransferRecipient("");
       fetchTransactions();
@@ -246,7 +246,7 @@ const Dashboard = () => {
   const handleLoanApplication = async (e) => {
     e.preventDefault();
     
-    if (!loanAmount || isNaN(loanAmount) || parseFloat(loanAmount) <= 0) {
+    if (!loanAmount || isNaN(Number(loanAmount)) || Number(loanAmount) <= 0) {
       toast.error("Please enter a valid loan amount");
       return;
     }
@@ -256,7 +256,7 @@ const Dashboard = () => {
       return;
     }
     
-    if (!loanDuration || isNaN(loanDuration) || parseInt(loanDuration) <= 0) {
+    if (!loanDuration || isNaN(Number(loanDuration)) || Number(loanDuration) <= 0) {
       toast.error("Please enter a valid loan duration");
       return;
     }
@@ -270,9 +270,9 @@ const Dashboard = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          amount: parseFloat(loanAmount),
-          loanTypeId: parseInt(loanType),
-          durationMonths: parseInt(loanDuration)
+          amount: Number(loanAmount),
+          loanTypeId: Number(loanType),
+          durationMonths: Number(loanDuration)
         })
       });
       
@@ -914,3 +914,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
