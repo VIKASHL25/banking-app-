@@ -216,6 +216,393 @@ app.get('/api/user', authenticateToken, async (req, res) => {
   }
 });
 
+// Get user account details
+app.get('/api/user/account', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. User only.' });
+    }
+
+    // Get user information including balance
+    const [users] = await pool.query(
+      'SELECT id, username, name, balance FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Generate account number based on user ID
+    const accountNumber = `SV${users[0].id.toString().padStart(8, '0')}`;
+    
+    res.json({ 
+      balance: users[0].balance,
+      name: users[0].name,
+      accountNumber: accountNumber
+    });
+  } catch (error) {
+    console.error('Get account details error:', error);
+    res.status(500).json({ error: 'Server error while getting account details' });
+  }
+});
+
+// Get user transactions
+app.get('/api/user/transactions', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. User only.' });
+    }
+
+    // Get user transactions
+    const [transactions] = await pool.query(
+      `SELECT * FROM transactions 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC 
+       LIMIT 100`,
+      [req.user.id]
+    );
+    
+    res.json({ transactions });
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({ error: 'Server error while getting transactions' });
+  }
+});
+
+// User deposit
+app.post('/api/user/deposit', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. User only.' });
+    }
+
+    const { amount } = req.body;
+    
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    // Start transaction
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      // Update user balance
+      await connection.query(
+        'UPDATE users SET balance = balance + ? WHERE id = ?',
+        [amount, req.user.id]
+      );
+
+      // Record transaction
+      await connection.query(
+        `INSERT INTO transactions 
+         (user_id, amount, transaction_type, description) 
+         VALUES (?, ?, ?, ?)`,
+        [req.user.id, amount, 'deposit', 'Cash deposit']
+      );
+
+      // Get new balance
+      const [users] = await connection.query(
+        'SELECT balance FROM users WHERE id = ?',
+        [req.user.id]
+      );
+
+      await connection.commit();
+      
+      res.json({
+        message: 'Deposit successful',
+        newBalance: users[0].balance
+      });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Deposit error:', error);
+    res.status(500).json({ error: 'Server error during deposit' });
+  }
+});
+
+// User withdrawal
+app.post('/api/user/withdraw', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. User only.' });
+    }
+
+    const { amount } = req.body;
+    
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    // Start transaction
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      // Check balance
+      const [users] = await connection.query(
+        'SELECT balance FROM users WHERE id = ?',
+        [req.user.id]
+      );
+      
+      if (users[0].balance < amount) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Insufficient funds' });
+      }
+
+      // Update user balance
+      await connection.query(
+        'UPDATE users SET balance = balance - ? WHERE id = ?',
+        [amount, req.user.id]
+      );
+
+      // Record transaction
+      await connection.query(
+        `INSERT INTO transactions 
+         (user_id, amount, transaction_type, description) 
+         VALUES (?, ?, ?, ?)`,
+        [req.user.id, amount, 'withdrawal', 'Cash withdrawal']
+      );
+
+      // Get new balance
+      const [updatedUser] = await connection.query(
+        'SELECT balance FROM users WHERE id = ?',
+        [req.user.id]
+      );
+
+      await connection.commit();
+      
+      res.json({
+        message: 'Withdrawal successful',
+        newBalance: updatedUser[0].balance
+      });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    res.status(500).json({ error: 'Server error during withdrawal' });
+  }
+});
+
+// User transfer
+app.post('/api/user/transfer', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. User only.' });
+    }
+
+    const { amount, recipientUsername } = req.body;
+    
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    if (!recipientUsername) {
+      return res.status(400).json({ error: 'Recipient username is required' });
+    }
+
+    if (req.user.username === recipientUsername) {
+      return res.status(400).json({ error: 'Cannot transfer to your own account' });
+    }
+
+    // Start transaction
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      // Get sender's balance
+      const [senders] = await connection.query(
+        'SELECT balance FROM users WHERE id = ?',
+        [req.user.id]
+      );
+      
+      if (senders[0].balance < amount) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Insufficient funds' });
+      }
+
+      // Check if recipient exists
+      const [recipients] = await connection.query(
+        'SELECT id, name FROM users WHERE username = ?',
+        [recipientUsername]
+      );
+      
+      if (recipients.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ error: 'Recipient not found' });
+      }
+
+      const recipient = recipients[0];
+
+      // Update sender's balance
+      await connection.query(
+        'UPDATE users SET balance = balance - ? WHERE id = ?',
+        [amount, req.user.id]
+      );
+
+      // Update recipient's balance
+      await connection.query(
+        'UPDATE users SET balance = balance + ? WHERE id = ?',
+        [amount, recipient.id]
+      );
+
+      // Record sender's transaction
+      await connection.query(
+        `INSERT INTO transactions 
+         (user_id, amount, transaction_type, description, reference_id) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          req.user.id, 
+          amount, 
+          'transfer', 
+          `Transfer to ${recipientUsername}`,
+          recipient.id
+        ]
+      );
+
+      // Record recipient's transaction
+      await connection.query(
+        `INSERT INTO transactions 
+         (user_id, amount, transaction_type, description, reference_id) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          recipient.id, 
+          amount, 
+          'deposit', 
+          `Transfer from ${req.user.username}`,
+          req.user.id
+        ]
+      );
+
+      // Get sender's new balance
+      const [updatedSender] = await connection.query(
+        'SELECT balance FROM users WHERE id = ?',
+        [req.user.id]
+      );
+
+      await connection.commit();
+      
+      res.json({
+        message: 'Transfer successful',
+        newBalance: updatedSender[0].balance,
+        recipient: recipient.name
+      });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Transfer error:', error);
+    res.status(500).json({ error: 'Server error during transfer' });
+  }
+});
+
+// Get loan types
+app.get('/api/loan-types', async (req, res) => {
+  try {
+    // Get all loan types
+    const [loanTypes] = await pool.query('SELECT * FROM loan_types');
+    
+    res.json({ loanTypes });
+  } catch (error) {
+    console.error('Get loan types error:', error);
+    res.status(500).json({ error: 'Server error while getting loan types' });
+  }
+});
+
+// Apply for loan
+app.post('/api/user/apply-loan', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.isStaff) {
+      return res.status(403).json({ error: 'Access denied. User only.' });
+    }
+
+    const { amount, loanTypeId, durationMonths } = req.body;
+    
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    if (!loanTypeId || isNaN(loanTypeId)) {
+      return res.status(400).json({ error: 'Invalid loan type' });
+    }
+
+    if (!durationMonths || isNaN(durationMonths) || durationMonths <= 0) {
+      return res.status(400).json({ error: 'Invalid duration' });
+    }
+
+    // Get loan type details
+    const [loanTypes] = await pool.query(
+      'SELECT * FROM loan_types WHERE id = ?',
+      [loanTypeId]
+    );
+    
+    if (loanTypes.length === 0) {
+      return res.status(404).json({ error: 'Loan type not found' });
+    }
+
+    const loanType = loanTypes[0];
+
+    // Validate amount and duration
+    if (amount > loanType.max_amount) {
+      return res.status(400).json({ 
+        error: `Maximum loan amount for ${loanType.name} is ${loanType.max_amount}` 
+      });
+    }
+
+    if (durationMonths < loanType.min_duration || durationMonths > loanType.max_duration) {
+      return res.status(400).json({ 
+        error: `Duration for ${loanType.name} must be between ${loanType.min_duration} and ${loanType.max_duration} months` 
+      });
+    }
+
+    // Calculate monthly payment and due date
+    const interestRate = loanType.interest_rate;
+    const monthlyInterest = interestRate / 100 / 12;
+    const monthlyPayment = (amount * monthlyInterest * Math.pow(1 + monthlyInterest, durationMonths)) / 
+                          (Math.pow(1 + monthlyInterest, durationMonths) - 1);
+    
+    // Calculate due date
+    const dueDate = new Date();
+    dueDate.setMonth(dueDate.getMonth() + durationMonths);
+
+    // Insert loan application
+    const [result] = await pool.query(
+      `INSERT INTO loans 
+       (user_id, loan_type_id, principal_amount, interest_rate, duration_months, monthly_payment, due_date) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        req.user.id,
+        loanTypeId,
+        amount,
+        interestRate,
+        durationMonths,
+        monthlyPayment,
+        dueDate
+      ]
+    );
+    
+    res.status(201).json({
+      message: 'Loan application submitted successfully',
+      loanId: result.insertId
+    });
+  } catch (error) {
+    console.error('Loan application error:', error);
+    res.status(500).json({ error: 'Server error during loan application' });
+  }
+});
+
 // Get pending loans (staff only)
 app.get('/api/staff/loans/pending', authenticateToken, async (req, res) => {
   try {
