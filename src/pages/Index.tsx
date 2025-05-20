@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { IndianRupee } from "lucide-react";
 import { formatCurrency } from "@/utils/formatting";
-import { API_URL } from "@/utils/constants";
+import { API_URL, USE_MOCK_DATA, MOCK_USER, MOCK_STAFF } from "@/utils/constants";
 
 const Index = () => {
   const { login, staffLogin, isLoggedIn } = useAuth();
@@ -36,6 +36,32 @@ const Index = () => {
     
     try {
       setLoading(true);
+      
+      // Check if we should use mock data
+      if (USE_MOCK_DATA) {
+        if (isStaffLogin) {
+          // Simulate staff login with mock data
+          // In a real app, validate credentials here
+          setTimeout(() => {
+            const mockToken = "mock-staff-jwt-token";
+            staffLogin(mockToken, MOCK_STAFF);
+            navigate("/staff");
+            toast.success("Staff login successful (Demo Mode)!");
+          }, 800);
+        } else {
+          // Simulate user login with mock data
+          // In a real app, validate credentials here
+          setTimeout(() => {
+            const mockToken = "mock-user-jwt-token";
+            login(mockToken, MOCK_USER);
+            navigate("/dashboard");
+            toast.success("Login successful (Demo Mode)!");
+          }, 800);
+        }
+        return;
+      }
+      
+      // Actual API calls if not using mock data
       if (isStaffLogin) {
         const response = await fetch(`${API_URL}/staff/login`, {
           method: 'POST',
@@ -98,6 +124,24 @@ const Index = () => {
     
     try {
       setLoading(true);
+      
+      // Check if we should use mock data
+      if (USE_MOCK_DATA) {
+        // Simulate registration with mock data
+        setTimeout(() => {
+          toast.success("Registration successful! Please login. (Demo Mode)");
+          setActiveTab("login");
+          setRegisterForm({
+            username: "",
+            password: "",
+            confirmPassword: "",
+            name: ""
+          });
+        }, 800);
+        return;
+      }
+      
+      // Actual API call if not using mock data
       const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
