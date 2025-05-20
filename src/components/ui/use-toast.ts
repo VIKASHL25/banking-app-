@@ -1,5 +1,5 @@
-
 // This file re-exports from @radix-ui/react-toast
+import * as React from "react";
 import { type ToastActionElement, type ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
