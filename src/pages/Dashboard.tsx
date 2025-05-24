@@ -60,7 +60,7 @@ const Dashboard = () => {
     if (error.message && error.message.includes("Failed to fetch")) {
       toast.error("Could not connect to the banking server. Please check your connection or try again later.");
     } else if (error.message && error.message.includes("Unexpected token '<'")) {
-      // This is the case when the server returns HTML instead of JSON (API endpoint doesn't exist)
+    
       if (USE_MOCK_DATA) {
         // We'll handle this in the individual fetch functions
         console.log("API returned HTML, using mock data instead");
@@ -123,14 +123,14 @@ const Dashboard = () => {
     try {
       console.log(`Fetching transactions from: ${API_URL}/user/transactions`);
       
-      if (USE_MOCK_DATA) {
-        // Use mock transaction data
-        console.log("Using mock transaction data");
-        setTimeout(() => {
-          setTransactions(MOCK_TRANSACTIONS);
-        }, 500);
-        return;
-      }
+      // if (USE_MOCK_DATA) {
+      //   // Use mock transaction data
+      //   console.log("Using mock transaction data");
+      //   setTimeout(() => {
+      //     setTransactions(MOCK_TRANSACTIONS);
+      //   }, 500);
+      //   return;
+      // }
       
       const response = await fetch(`${API_URL}/user/transactions`, {
         headers: {
@@ -161,18 +161,18 @@ const Dashboard = () => {
     try {
       console.log(`Fetching loan types from: ${API_URL}/loan-types`);
       
-      if (USE_MOCK_DATA) {
-        // Use mock loan types
-        const mockLoanTypes = [
-          { id: 1, name: "Personal Loan", interest_rate: 10.5, max_amount: 500000, min_duration: 12, max_duration: 60 },
-          { id: 2, name: "Home Loan", interest_rate: 8.5, max_amount: 5000000, min_duration: 60, max_duration: 240 }
-        ];
-        console.log("Using mock loan types");
-        setTimeout(() => {
-          setLoanTypes(mockLoanTypes);
-        }, 500);
-        return;
-      }
+      // if (USE_MOCK_DATA) {
+      //   // Use mock loan types
+      //   const mockLoanTypes = [
+      //     { id: 1, name: "Personal Loan", interest_rate: 10.5, max_amount: 500000, min_duration: 12, max_duration: 60 },
+      //     { id: 2, name: "Home Loan", interest_rate: 8.5, max_amount: 5000000, min_duration: 60, max_duration: 240 }
+      //   ];
+      //   console.log("Using mock loan types");
+      //   setTimeout(() => {
+      //     setLoanTypes(mockLoanTypes);
+      //   }, 500);
+      //   return;
+      // }
       
       const response = await fetch(`${API_URL}/loan-types`);
       
@@ -212,30 +212,7 @@ const Dashboard = () => {
       setProcessingTransaction(true);
       console.log(`Sending deposit request to: ${API_URL}/user/deposit`);
       
-      if (USE_MOCK_DATA) {
-        // Simulate a deposit with mock data
-        setTimeout(() => {
-          const depositValue = Number(depositAmount);
-          const newBalance = balance + depositValue;
-          setBalance(newBalance);
-          
-          // Add the transaction to the list
-          const newTransaction = {
-            id: Math.floor(Math.random() * 10000),
-            user_id: user?.id || 1,
-            amount: depositValue,
-            transaction_type: "deposit",
-            description: "Deposit",
-            created_at: new Date().toISOString()
-          };
-          
-          setTransactions([newTransaction, ...transactions]);
-          toast.success(`Successfully deposited ${formatCurrency(depositValue)} (Demo Mode)`);
-          setDepositAmount("");
-          setProcessingTransaction(false);
-        }, 800);
-        return;
-      }
+
       
       const response = await fetch(`${API_URL}/user/deposit`, {
         method: 'POST',
@@ -248,7 +225,7 @@ const Dashboard = () => {
       
       if (!response.ok) {
         if (response.status === 404) {
-          // If API is not available, simulate success
+     
           console.warn("API endpoint not found, simulating deposit");
           const newBalance = balance + Number(depositAmount);
           setBalance(newBalance);
@@ -265,7 +242,7 @@ const Dashboard = () => {
       setBalance(data.newBalance);
       toast.success(`Successfully deposited ${formatCurrency(Number(depositAmount))}`);
       setDepositAmount("");
-      fetchTransactions(); // Refresh transactions after deposit
+      fetchTransactions();
     } catch (error) {
       console.error("Deposit error:", error);
       toast.error(error.message || "Failed to process deposit");
@@ -290,31 +267,7 @@ const Dashboard = () => {
     try {
       setProcessingTransaction(true);
       
-      if (USE_MOCK_DATA) {
-        // Simulate a withdrawal with mock data
-        setTimeout(() => {
-          const withdrawValue = Number(withdrawAmount);
-          const newBalance = balance - withdrawValue;
-          setBalance(newBalance);
-          
-          // Add the transaction to the list
-          const newTransaction = {
-            id: Math.floor(Math.random() * 10000),
-            user_id: user?.id || 1,
-            amount: withdrawValue,
-            transaction_type: "withdrawal",
-            description: "ATM withdrawal",
-            created_at: new Date().toISOString()
-          };
-          
-          setTransactions([newTransaction, ...transactions]);
-          toast.success(`Successfully withdrew ${formatCurrency(withdrawValue)} (Demo Mode)`);
-          setWithdrawAmount("");
-          setProcessingTransaction(false);
-        }, 800);
-        return;
-      }
-      
+     
       const response = await fetch(`${API_URL}/user/withdraw`, {
         method: 'POST',
         headers: {
@@ -549,7 +502,7 @@ const Dashboard = () => {
       <header>
         <div className="header-container">
           <div className="header-content">
-            <h1>SV Bank</h1>
+            <h1 className="bank-name">SV Bank</h1>
             <div className="user-info">
               <div className="user-details">
                 <p className="user-name">Welcome, {user?.name}</p>
@@ -575,7 +528,7 @@ const Dashboard = () => {
               <span className="account-number">Account No: {accountNumber}</span>
             </div>
             <div className="balance-amount">
-              <IndianRupee className="currency-icon" />
+            
               <span>{formatCurrency(balance)}</span>
             </div>
             <div className="account-type">
@@ -842,7 +795,7 @@ const Dashboard = () => {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          background-color: #f5f7fa;
+          background-color: #CCE5FF;
         }
         
         header {
@@ -863,6 +816,24 @@ const Dashboard = () => {
           justify-content: space-between;
           align-items: center;
         }
+
+       .bank-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  background: linear-gradient(145deg, #ffffff, #d1d5db); /* silver-white gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  
+  /* ✨ Light Glow Effect */
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.4),
+    0 0 12px rgba(255, 255, 255, 0.2),
+    0 4px 6px rgba(0, 0, 0, 0.3); /* soft shadow for depth */
+}
+
         
         h1 {
           font-size: 1.5rem;
@@ -878,19 +849,29 @@ const Dashboard = () => {
         
         .user-name {
           margin: 0;
+          font-size: 2.3rem;
+          font-family: 'Inter', sans-serif;
+        position : center;
+  font-weight: 600;
+  color: #f9fafb; /* light on blue background */
+  margin-top: 10px;
+ text-shadow: 0 0 6px rgba(255, 255, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2);
+
         }
         
         .logout-btn {
           border: 1px solid white;
-          background-color: transparent;
+          background-color: #D12E2E;
           color: white;
-          padding: 0.5rem 1rem;
+           margin-left: auto; 
+          
+          padding: 0.5rem 1.2rem;
           border-radius: 0.375rem;
           cursor: pointer;
         }
         
         .logout-btn:hover {
-          background-color: rgba(255, 255, 255, 0.2);
+          background-color: rgba(253, 23, 23);
         }
         
         main {
@@ -926,7 +907,7 @@ const Dashboard = () => {
         }
         
         .account-number {
-          font-size: 0.875rem;
+          font-size: 1.5rem;
           opacity: 0.8;
         }
         
@@ -970,7 +951,7 @@ const Dashboard = () => {
         }
         
         .tab-content-container {
-          background-color: white;
+          background-color: rgb(204,221,256);
           border-radius: 0.5rem;
           box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
           padding: 1.5rem;

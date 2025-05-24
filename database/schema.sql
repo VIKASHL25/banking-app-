@@ -3,7 +3,7 @@
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(100) NOT NULL, -- Store as plain text as requested
+    password VARCHAR(100) NOT NULL, 
     name VARCHAR(100) NOT NULL,
     balance DECIMAL(12, 2) DEFAULT 1000.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -13,7 +13,7 @@ CREATE TABLE users (
 CREATE TABLE staff (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(100) NOT NULL, -- Store as plain text as requested
+    password VARCHAR(100) NOT NULL, 
     name VARCHAR(100) NOT NULL,
     role VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -25,8 +25,8 @@ CREATE TABLE loan_types (
     name VARCHAR(50) NOT NULL,
     interest_rate DECIMAL(5,2) NOT NULL,
     max_amount DECIMAL(12, 2) NOT NULL,
-    min_duration INT NOT NULL, -- in months
-    max_duration INT NOT NULL, -- in months
+    min_duration INT NOT NULL, 
+    max_duration INT NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -39,7 +39,7 @@ CREATE TABLE loans (
     interest_rate DECIMAL(5, 2) NOT NULL,
     duration_months INT NOT NULL,
     monthly_payment DECIMAL(12, 2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected, paid
+    status VARCHAR(20) DEFAULT 'pending', 
     approved_by INT,
     approved_at TIMESTAMP NULL,
     due_date TIMESTAMP NOT NULL,
@@ -54,9 +54,9 @@ CREATE TABLE transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
     amount DECIMAL(12, 2) NOT NULL,
-    transaction_type VARCHAR(20) NOT NULL, -- deposit, withdrawal, transfer, loan_disbursement, loan_payment
+    transaction_type VARCHAR(20) NOT NULL, 
     description TEXT,
-    reference_id INT, -- could be loan_id or other transaction id
+    reference_id INT, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -77,20 +77,5 @@ VALUES
     ('manager@svbank.com', 'manager123', 'Manager User', 'Branch Manager'),
     ('loan@svbank.com', 'loan123', 'Loan Officer', 'Loan Officer');
 
--- Insert demo users
-INSERT INTO users (username, password, name, balance)
-VALUES 
-    ('johndoe', 'pass123', 'John Doe', 25000.50),
-    ('janedoe', 'pass123', 'Jane Doe', 15750.75),
-    ('samsmith', 'pass123', 'Sam Smith', 8500.25);
 
--- Insert some sample transactions for demo users
-INSERT INTO transactions (user_id, amount, transaction_type, description)
-VALUES
-    (1, 5000.00, 'deposit', 'Initial deposit'),
-    (1, 1200.00, 'withdrawal', 'ATM withdrawal'),
-    (1, 3500.00, 'transfer', 'Transfer to Jane Doe'),
-    (2, 3500.00, 'deposit', 'Transfer from John Doe'),
-    (2, 2000.00, 'deposit', 'Salary deposit'),
-    (3, 1500.00, 'deposit', 'Refund received'),
-    (3, 750.00, 'withdrawal', 'Cash withdrawal');
+

@@ -181,7 +181,7 @@ const Index = () => {
       <header>
         <div className="container">
           <div className="header-content">
-            <h1>SV Bank</h1>
+            <h1 className='bank-name'>SV Bank</h1>
             <div className="nav-buttons">
               <button 
                 className="customer-btn"
@@ -490,7 +490,7 @@ const Index = () => {
                 <p>123 Banking Street</p>
                 <p>Financial District</p>
                 <p>support@svbank.com</p>
-                <p>+1 (555) 123-4567</p>
+                
               </address>
             </div>
           </div>
@@ -522,6 +522,19 @@ const Index = () => {
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
+          .bank-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(145deg, #ffffff, #d1d5db); /* soft silver gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
         .header-content {
           display: flex;
           justify-content: space-between;
@@ -539,29 +552,37 @@ const Index = () => {
         }
 
         .customer-btn {
-          background-color: transparent;
-          color: white;
-          border: none;
+           backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 15px;
+  padding: 20px;
+  color: white;
+          
+          
         }
 
         .customer-btn:hover {
-          background-color: rgba(255, 255, 255, 0.2);
+          background-color: rgba(255, 255, 255, 0.3);
         }
 
         .staff-btn {
-          border: 1px solid white;
-          background-color: transparent;
-          color: white;
+           backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 15px;
+  padding: 20px;
+  color: white;
         }
 
         .staff-btn:hover {
-          background-color: rgba(255, 255, 255, 0.2);
+          background-color: rgba(255, 255, 250, 0.3);
         }
 
         /* Hero Section */
         .hero {
-          background-image: linear-gradient(to bottom right, #eef2ff, #faf5ff);
-          padding: 4rem 0;
+           background-image: linear-gradient(to bottom right, #eef2ff, #faf5ff);
+          padding: 5rem 0;
         }
 
         .hero-content {

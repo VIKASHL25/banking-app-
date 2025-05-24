@@ -64,7 +64,7 @@ const authenticateToken = (req, res, next) => {
   }
 })();
 
-// Test route
+
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
 });
@@ -74,7 +74,7 @@ app.post('/api/register', async (req, res) => {
   try {
     const { username, password, name } = req.body;
     
-    // Check if username exists
+    //  if username exists
     const [userCheck] = await pool.query(
       'SELECT * FROM users WHERE username = ?',
       [username]
@@ -84,7 +84,7 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
     
-    // Insert user with plain text password as requested
+    // Insert user 
     const [result] = await pool.query(
       'INSERT INTO users (username, password, name) VALUES (?, ?, ?)',
       [username, password, name]
@@ -105,7 +105,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// User login
+
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -120,15 +120,12 @@ app.post('/api/login', async (req, res) => {
     if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
-    
     const user = users[0];
-    
-    // Compare plain text passwords as requested
+
     if (password !== user.password) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
-    
-    // Generate JWT token
+   
     const token = jwt.sign(
       { id: user.id, username: user.username, isStaff: false },
       JWT_SECRET,
@@ -238,14 +235,14 @@ app.get('/api/user', authenticateToken, async (req, res) => {
   }
 });
 
-// Get user account details
+// Geting user account details
 app.get('/api/user/account', authenticateToken, async (req, res) => {
   try {
     if (req.user.isStaff) {
       return res.status(403).json({ error: 'Access denied. User only.' });
     }
 
-    // Get user information including balance
+    //  user information 
     const [users] = await pool.query(
       'SELECT id, username, name, balance FROM users WHERE id = ?',
       [req.user.id]
@@ -255,7 +252,7 @@ app.get('/api/user/account', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Generate account number based on user ID
+    // Generating account number
     const accountNumber = `SV${users[0].id.toString().padStart(8, '0')}`;
     
     res.json({ 
@@ -269,7 +266,7 @@ app.get('/api/user/account', authenticateToken, async (req, res) => {
   }
 });
 
-// Get user transactions
+//  user transactions
 app.get('/api/user/transactions', authenticateToken, async (req, res) => {
   try {
     if (req.user.isStaff) {
