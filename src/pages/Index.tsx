@@ -533,6 +533,10 @@ const Index = () => {
   background: linear-gradient(145deg, #ffffff, #d1d5db); /* soft silver gradient */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+   text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.4),
+    0 0 12px rgba(255, 255, 255, 0.2),
+    0 4px 6px rgba(0, 0, 0, 0.3); /* soft shadow for depth */
 }
 
         .header-content {

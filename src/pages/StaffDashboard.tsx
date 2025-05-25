@@ -94,7 +94,7 @@ const StaffDashboard = () => {
     }
   };
 
-  // Handle logout
+  //  logout
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -107,7 +107,7 @@ const StaffDashboard = () => {
         <div className="header-container">
           <div className="header-content">
             <div>
-              <h1>SV Bank Staff Portal</h1>
+              <h1 className="bank-name">SV Bank Staff Portal</h1>
               <p className="subtitle">Loan Management System</p>
             </div>
             <div className="user-info">
@@ -133,13 +133,7 @@ const StaffDashboard = () => {
             <h2>Loan Applications</h2>
             <p>Review and process customer loan applications</p>
           </div>
-          <button
-            className="refresh-btn"
-            onClick={fetchPendingLoans}
-            disabled={loading}
-          >
-            Refresh List
-          </button>
+        
         </div>
         
         {loading ? (
@@ -277,24 +271,44 @@ const StaffDashboard = () => {
         }
         
         .user-name {
-          font-weight: 600;
+          font-weight: 700;
         }
         
         .user-role {
           font-size: 0.875rem;
           color: #bfdbfe;
         }
+
+             .bank-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  background: linear-gradient(145deg, #ffffff, #d1d5db); /* silver-white gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  
+  /* ✨ Light Glow Effect */
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.4),
+    0 0 12px rgba(255, 255, 255, 0.2),
+    0 4px 6px rgba(0, 0, 0, 0.3); /* soft shadow for depth */
+}
         
         .logout-btn {
-          border: 1px solid white;
-          background-color: transparent;
+            border: 1px solid white;
+          background-color: #D12E2E;
           color: white;
-          padding: 0.5rem 1rem;
+           margin-left: auto; 
+          
+          padding: 0.5rem 1.2rem;
           border-radius: 0.375rem;
+          cursor: pointer;
         }
         
         .logout-btn:hover {
-          background-color: rgba(255, 255, 255, 0.2);
+           background-color: rgba(253, 23, 23);
         }
         
         main {
