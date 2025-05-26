@@ -37,11 +37,9 @@ const Index = () => {
     try {
       setLoading(true);
       
-      // Check if we should use mock data
       if (USE_MOCK_DATA) {
         if (isStaffLogin) {
-          // Simulate staff login with mock data
-          // In a real app, validate credentials here
+     
           setTimeout(() => {
             const mockToken = "mock-staff-jwt-token";
             staffLogin(mockToken, MOCK_STAFF);
@@ -49,8 +47,7 @@ const Index = () => {
             toast.success("Staff login successful (Demo Mode)!");
           }, 800);
         } else {
-          // Simulate user login with mock data
-          // In a real app, validate credentials here
+        
           setTimeout(() => {
             const mockToken = "mock-user-jwt-token";
             login(mockToken, MOCK_USER);
@@ -487,7 +484,7 @@ const Index = () => {
             <div className="footer-section">
               <h4>Contact Us</h4>
               <address>
-                <p>123 Banking Street</p>
+                <p>DSCE</p>
                 <p>Financial District</p>
                 <p>support@svbank.com</p>
                 
