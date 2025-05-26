@@ -61,7 +61,7 @@ CREATE TABLE transactions (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Insert default loan types
+
 INSERT INTO loan_types (name, interest_rate, max_amount, min_duration, max_duration)
 VALUES 
     ('Personal', 12.5, 500000, 6, 60),
@@ -70,7 +70,7 @@ VALUES
     ('Vehicle', 9.5, 1500000, 12, 84),
     ('Business', 14.0, 5000000, 12, 60);
 
--- Insert default staff
+
 INSERT INTO staff (email, password, name, role)
 VALUES 
     ('admin@svbank.com', 'admin123', 'Admin User', 'Administrator'),

@@ -123,14 +123,7 @@ const Dashboard = () => {
     try {
       console.log(`Fetching transactions from: ${API_URL}/user/transactions`);
       
-      // if (USE_MOCK_DATA) {
-      //   // Use mock transaction data
-      //   console.log("Using mock transaction data");
-      //   setTimeout(() => {
-      //     setTransactions(MOCK_TRANSACTIONS);
-      //   }, 500);
-      //   return;
-      // }
+      
       
       const response = await fetch(`${API_URL}/user/transactions`, {
         headers: {
@@ -161,18 +154,8 @@ const Dashboard = () => {
     try {
       console.log(`Fetching loan types from: ${API_URL}/loan-types`);
       
-      // if (USE_MOCK_DATA) {
-      //   // Use mock loan types
-      //   const mockLoanTypes = [
-      //     { id: 1, name: "Personal Loan", interest_rate: 10.5, max_amount: 500000, min_duration: 12, max_duration: 60 },
-      //     { id: 2, name: "Home Loan", interest_rate: 8.5, max_amount: 5000000, min_duration: 60, max_duration: 240 }
-      //   ];
-      //   console.log("Using mock loan types");
-      //   setTimeout(() => {
-      //     setLoanTypes(mockLoanTypes);
-      //   }, 500);
-      //   return;
-      // }
+      
+      
       
       const response = await fetch(`${API_URL}/loan-types`);
       
